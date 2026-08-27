@@ -2,7 +2,7 @@
 name: Dify development
 description: >-
   Use this first for any Dify work — routes to console, plugins, apps, RAG,
-  models, agents, workspace extras, API catalog, intranet, debug, backup.
+  models, agents, workspace extras, API catalog, compose/env, intranet, debug, backup.
 ---
 # Dify development (router)
 
@@ -24,6 +24,7 @@ Use this first when the user wants anything Dify-related. Pick one skill and fol
 | App `404`, CSRF, plugin red, "同步数据中", nginx 502 after recreate | Dify troubleshooting |
 | Call `/v1/chat-messages` or `/v1/workflows/run`, API keys, `Invalid upload file` | Dify service API |
 | Backup, upgrade, air-gap pack, both Postgres DBs, `.env` drift | Dify backup and upgrade |
+| Workers, timeouts, uploads, workflow/loop caps, nginx, postgres, mail, `.env` injection | Dify compose and config |
 | Private network, no SaaS, SSRF, `NO_PROXY`, internal vLLM/SQL | Dify intranet |
 
 ## Hard rules (every Dify task)
@@ -37,7 +38,7 @@ Use this first when the user wants anything Dify-related. Pick one skill and fol
 8. Community RBAC / billing / some RAG publish 403s are feature gates, not CSRF.
 9. Service API: same API key + same stable `user` for upload and run. Console uploads are invalid on `/v1`.
 10. DSL `version` comes from `GET /console/api/app-dsl-version` (1.17 = `0.7.0`). Never paste a 1.16 `0.1.5` export onto 1.17. Every canvas node needs top-level `type: "custom"` or the UI throws React #130.
-11. `.env` values do not inject unless the key is listed in compose `environment:`. After recreating api/web, `nginx -s reload`.
+11. 1.17 env: api/worker/web/plugin_daemon/sandbox load `.env` via `env_file` (optional knobs in `docker/envs/*.env`). nginx/ssrf/weaviate/db still need listed `environment:` / `command:`. After recreating api/web, `nginx -s reload`. Knobs: [Dify compose and config](sand-workflow:dify-compose-and-config).
 
 ## Order of work for a new Dify box
 1. Compose up, `GET /console/api/setup`
@@ -49,4 +50,4 @@ Use this first when the user wants anything Dify-related. Pick one skill and fol
 7. Publish + API key (or MCP server)
 
 ## If two skills overlap
-Operate vs debug → troubleshooting when there is an error, console API when you are only fetching/changing config. Service API vs console → `/v1` is for *published* apps and external callers; `/console/api` is for you as admin. Catalog vs a domain skill → catalog picks the prefix; the domain skill has the payload. Import vs edit → `POST /apps/imports` always creates a **new** app; in-place canvas edits are `POST .../workflows/draft` plus `hash`.
+Operate vs debug → troubleshooting when there is an error, console API when you are only fetching/changing config. Service API vs console → `/v1` is for *published* apps and external callers; `/console/api` is for you as admin. Catalog vs a domain skill → catalog picks the prefix; the domain skill has the payload. Compose knobs vs a crash → compose-and-config to change a value, troubleshooting when it is already broken. Import vs edit → `POST /apps/imports` always creates a **new** app; in-place canvas edits are `POST .../workflows/draft` plus `hash`.

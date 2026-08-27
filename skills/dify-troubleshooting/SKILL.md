@@ -5,7 +5,7 @@ description: >-
 ---
 # Dify troubleshooting
 
-Use this when Dify is up but something fails. Intranet/SSRF: [Dify intranet](sand-workflow:dify-intranet). Plugin uv: [Dify plugin install](sand-workflow:dify-plugin-install). Canvas/DSL: [Dify apps and workflows](sand-workflow:dify-apps-and-workflows). Prefixes: [Dify API catalog](sand-workflow:dify-api-catalog).
+Use this when Dify is up but something fails. Changing workers/timeouts/.env: [Dify compose and config](sand-workflow:dify-compose-and-config). Intranet/SSRF: [Dify intranet](sand-workflow:dify-intranet). Plugin uv: [Dify plugin install](sand-workflow:dify-plugin-install). Canvas/DSL: [Dify apps and workflows](sand-workflow:dify-apps-and-workflows). Prefixes: [Dify API catalog](sand-workflow:dify-api-catalog).
 
 ## Decide where it broke
 
@@ -19,8 +19,8 @@ Use this when Dify is up but something fails. Intranet/SSRF: [Dify intranet](san
 | UI "N failed tasks" but list ok | stale tasks; `POST .../plugin/tasks/delete_all` |
 | Provider missing | plugin not `local runtime ready` |
 | Upload 413 | nginx body size **and** `UPLOAD_FILE_*` |
-| `.env` changed, container unchanged | compose `environment:` did not list the var — only listed keys inject |
-| HTTP / external KB 502 to `10.`/`192.168.` | Squid SSRF; add host to `NO_PROXY` and/or `SSRF_PROXY_ALLOW_PRIVATE_IPS` |
+| `.env` changed, container unchanged | 1.17: api/worker/web/plugin_daemon/sandbox load `.env`; nginx/ssrf/weaviate/db still need listed keys. Optional knobs live in `docker/envs/*.env`. Recreate the service (nginx `NGINX_*` ≠ reload). |
+| HTTP / external KB 502 to `10.`/`192.168.` | Squid SSRF; `NO_PROXY` on api+worker and/or `SSRF_PROXY_ALLOW_PRIVATE_IPS` as **CIDR list** (not `true`) |
 | `MILVUS_USER is required` | set `MILVUS_USER`/`MILVUS_PASSWORD` in compose **and** `.env` |
 | `minimax_group_id` | old MiniMax models need Group ID, or delete that default |
 | File preview broken in plugins | `INTERNAL_FILES_URL=http://api:5001` |
@@ -58,7 +58,7 @@ curl -s -o /dev/null -w "%{http_code}" -H "Upgrade: websocket" -H "Connection: U
 Never `compose down -v`. After `--force-recreate`, reload nginx.
 
 ## Env injection
-Dify compose often **lists** env keys under `environment:`. A value only in `.env` is **not** injected. PG `shared_buffers` etc. may be **hardcoded in the db service `command:`** — editing `POSTGRES_*` in `.env` does nothing. Same trap for `CELERY_AUTO_SCALE`. Verify with `docker exec <api> cat /proc/1/environ`.
+1.17: api / worker / worker_beat / web / plugin_daemon / sandbox have `env_file` including `./.env`, so keys in `.env` **do** inject. nginx / ssrf_proxy / weaviate / redis / db still only see listed `environment:` or `command:` interpolation. Copy `docker/envs/**/*.env.example` → `*.env` or advanced knobs never appear. `POSTGRES_*` and `CELERY_AUTO_SCALE` **are** interpolated in 1.17. Verify with `docker exec <svc> printenv KEY`. Procedure: [Dify compose and config](sand-workflow:dify-compose-and-config).
 
 ## Plugins / models / RAG
 Installed ≠ credentials saved. `high_quality` needs embedding. External KB: [Dify knowledge bases](sand-workflow:dify-knowledge-bases). MiniMax is a cloud API — on an air-gap, remove it as the workspace default.

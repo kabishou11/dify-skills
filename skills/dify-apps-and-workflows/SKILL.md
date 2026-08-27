@@ -7,7 +7,7 @@ description: >-
 
 Use this when creating or editing apps, the canvas, DSL, or publishing. Login: [Dify console API](sand-workflow:dify-console-api). After publish: [Dify service API](sand-workflow:dify-service-api). Failures: [Dify troubleshooting](sand-workflow:dify-troubleshooting).
 
-Field-tested on 1.16.1 production canvases; this tree targets **1.17**. DSL `version` is **not** the Dify software version — `GET /console/api/app-dsl-version` (1.17 exports `0.7.0`; 1.16.1 exports were often `0.1.5`). Never copy a foreign `version`.
+Canvas Loop/iteration/tools caps (`LOOP_NODE_MAX_COUNT`, `MAX_ITERATIONS_NUM`, `MAX_TOOLS_NUM`) are **web** env — [Dify compose and config](sand-workflow:dify-compose-and-config). Field-tested on 1.16.1 production canvases; this tree targets **1.17**. DSL `version` is **not** the Dify software version — `GET /console/api/app-dsl-version` (1.17 exports `0.7.0`; 1.16.1 exports were often `0.1.5`). Never copy a foreign `version`.
 
 ## Create
 ```http

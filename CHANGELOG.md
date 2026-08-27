@@ -10,6 +10,7 @@ A GitHub Release is created only when a Dify line is frozen. Until then everythi
 Working tree on `main`. **No GitHub Release yet.**
 
 ### Added
+- `dify-compose-and-config`: 1.17 `.env` / `docker/envs` injection, workers, timeout stack, dual-plane workflow caps, nginx recreate vs reload, postgres/redis, mail, community login gates.
 - README rewritten: problem map, mermaid diagrams, per-skill usage, Cursor / Claude Code / Codex install paths, acknowledgements.
 - `scripts/install.sh` copies `skills/dify-*` into `.cursor/skills`, `.claude/skills`, or `.agents/skills`.
 
@@ -19,7 +20,7 @@ Working tree on `main`. **No GitHub Release yet.**
 ### Changed
 - Folded generic lessons from 1.16.1 production ops into the 1.17 skills (no host secrets, IPs, or app ids):
   - Service API file ACL: same key + same stable `user`; file input is one object; prefer `blocking` with HTTP timeout ≥ 600s; `/v1/chat/completions` is often 404.
-  - Compose `.env` keys inject only when listed under `environment:`; nginx must reload after recreate; canvas sync is Socket.IO `/socket.io/`.
+  - 1.17 api/worker/web load `.env` via `env_file`; nginx/ssrf/weaviate/db still need listed keys. `SSRF_PROXY_ALLOW_PRIVATE_IPS` is a CIDR list, not `true`. Canvas sync is Socket.IO `/socket.io/`.
   - Offline pack must include images, compose, `.env` (`SECRET_KEY`), both `dify` and `dify_plugin` dumps, `plugin_packages/`, `cwd/`, and vector volumes.
   - RAGFlow endpoint is `.../api/v1/dify` (Dify appends `/retrieval`); disable score_threshold because that path has no reranker.
   - DSL: `GET /app-dsl-version` (1.17 = `0.7.0`); every node needs top-level `type: custom`; Loop `break_conditions` need `id`+`varType` on loop vars; rerank needs four name fields; tools use OpenAPI `operationId`.
