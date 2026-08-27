@@ -10,6 +10,9 @@ A GitHub Release is created only when a Dify line is frozen. Until then everythi
 Working tree on `main`. **No GitHub Release yet.**
 
 ### Added
+- README rewritten: problem map, mermaid diagrams, per-skill usage, Cursor / Claude Code / Codex install paths, acknowledgements.
+- `scripts/install.sh` copies `skills/dify-*` into `.cursor/skills`, `.claude/skills`, or `.agents/skills`.
+
 - Router plus 13 domain skills covering console, plugins, apps, knowledge, models, agents, service API, intranet, backup, troubleshooting, API catalog, and workspace extras (Skills, snippets, Agent roster, RAG pipeline, MCP).
 - Routes scanned from Dify 1.17.0 `api/controllers` (console, `/v1`, WebApp `/api`, OpenAPI, MCP, inner API).
 
