@@ -1,57 +1,70 @@
 ---
 name: Dify troubleshooting
 description: >-
-  Use this when Dify login, plugins, models, RAG, uploads, or containers fail —
-  CSRF, uv, 413, SSRF, stale failed tasks, reboot.
+  Use this when Dify login, plugins, models, RAG, uploads, or containers fail — CSRF, uv, 413, SSRF, stale failed tasks, reboot.
 ---
 # Dify troubleshooting
 
-Use this when Dify is up but something fails: login, plugins red, models missing, RAG empty, 413, containers unhealthy, "install failed" in the UI. Intranet/SSRF: [Dify intranet](sand-workflow:dify-intranet). Plugin uv: [Dify plugin install](sand-workflow:dify-plugin-install). Prefix mix-ups: [Dify API catalog](sand-workflow:dify-api-catalog).
+Use this when Dify is up but something fails. Intranet/SSRF: [Dify intranet](sand-workflow:dify-intranet). Plugin uv: [Dify plugin install](sand-workflow:dify-plugin-install). Canvas/DSL: [Dify apps and workflows](sand-workflow:dify-apps-and-workflows). Prefixes: [Dify API catalog](sand-workflow:dify-api-catalog).
 
 ## Decide where it broke
+
 | Symptom | Likely layer |
 |---|---|
-| Connection refused on `:80` | nginx / compose / dockerd not running |
-| `/install` loops or setup `not_started` | admin not created |
-| `401 Invalid encrypted data` | password sent as plaintext; must be **Base64** |
-| `401 CSRF token is missing or invalid` | missing `X-CSRF-Token` (cookie alone is not enough) |
-| Plugin card red / uv `exit status 1` | plugin_daemon cannot reach PyPI or local index missing wheels |
-| UI "N failed tasks" but list shows plugins | stale tasks; plugins may already work |
-| Provider missing from model list | plugin not `local runtime ready` |
-| Upload 413 | `NGINX_CLIENT_MAX_BODY_SIZE` smaller than upload/plugin caps |
-| HTTP node can't hit `10.x` / `172.x` | SSRF deny-by-default |
-| File preview broken in plugins | set `INTERNAL_FILES_URL=http://api:5001` |
-| Everyone logged out, file URLs die | `SECRET_KEY` changed after first boot |
-| After host reboot, nothing listens | nested boxes often need **manual `dockerd`**, then `compose up -d` |
-| Draft save 400 | missing/stale workflow `hash` from GET draft |
-| 403 on `/rbac`, `/billing`, RAG publish | community / feature flag, not CSRF |
-| `/agent` 404 vs app list empty | Agent Studio (`/agent`) ≠ `mode: agent-chat` (`/apps`) |
-| Bearer key on `/console/api` 401 | wrong surface; app keys are `/v1` only |
-| MCP client 404 after refresh | `POST .../server/refresh` rotated `server_code` |
+| Connection refused on `:80` | nginx / compose / dockerd |
+| `/install` loops | admin not created |
+| `401 Invalid encrypted data` | password not **Base64** |
+| `401 CSRF` / `unauthorized` | missing CSRF, or session ~1h expired |
+| Plugin red / uv `exit status 1` | daemon cannot reach PyPI / local index |
+| UI "N failed tasks" but list ok | stale tasks; `POST .../plugin/tasks/delete_all` |
+| Provider missing | plugin not `local runtime ready` |
+| Upload 413 | nginx body size **and** `UPLOAD_FILE_*` |
+| `.env` changed, container unchanged | compose `environment:` did not list the var — only listed keys inject |
+| HTTP / external KB 502 to `10.`/`192.168.` | Squid SSRF; add host to `NO_PROXY` and/or `SSRF_PROXY_ALLOW_PRIVATE_IPS` |
+| `MILVUS_USER is required` | set `MILVUS_USER`/`MILVUS_PASSWORD` in compose **and** `.env` |
+| `minimax_group_id` | old MiniMax models need Group ID, or delete that default |
+| File preview broken in plugins | `INTERNAL_FILES_URL=http://api:5001` |
+| Logged out / file URLs die | `SECRET_KEY` changed after boot (also kills model credential decrypt) |
+| After reboot, nothing listens | nested boxes: manual `dockerd`, then compose up |
+| Draft save 400 / `draft_workflow_not_sync` | stale workflow `hash` |
+| Canvas "同步数据中" / React #130 | Socket.IO `/socket.io/` missing, `NEXT_PUBLIC_SOCKET_URL=localhost`, or DSL nodes lack top-level `type: custom` |
+| Plugin icons 503 | nginx `console_limit` burst; give `/plugin/icon` its own location without limit |
+| Recreate api/web then 502 | nginx cached upstream IP → `nginx -s reload` |
+| 403 `/rbac` `/billing` RAG publish | community feature gate |
+| `/agent` 404 vs empty app list | Studio `/agent` ≠ `agent-chat` |
+| Bearer on `/console/api` | wrong surface |
+| `Invalid upload file` | see service API (user + key + `/v1` upload) |
+| External KB low scores / zero recall | RAGFlow `/dify/retrieval` has no rerank; **disable** Dify score_threshold |
+| External KB path 404 | endpoint must be `.../dify` because Dify appends `/retrieval` |
+| LLM empty text | thinking model `max_tokens` too small (use ≥16384) or missing user message |
+| Tool `Unknown error` | `tool_name` is not the OpenAPI `operationId` |
+| Publish "无效的变量" on Loop | break_conditions missing `id`/`varType`, or they reference child outputs |
+| Publish "视觉变量不能为空" | `vision.enabled` without `configs` |
+| Publish "Rerank 模型不能为空" | rerank missing `provider`/`model` (UI) vs `reranking_*` (engine) — write all four |
+| `credentials is not initialized` | model row on the wrong provider, or orphan `provider_models` after daemon restart |
+| `CONSOLE_API_URL` points at `api:5001` in the browser | leave `CONSOLE_API_URL`/`APP_API_URL` empty (relative via nginx) |
+| 403 on `/rbac` | community |
 
 ## Compose health
 ```bash
 sudo docker compose ps
-sudo docker compose logs --tail=80 api plugin_daemon nginx
+sudo docker compose logs --tail=80 api plugin_daemon nginx api_websocket
 curl -sS http://127.0.0.1/console/api/setup
 curl -sS http://127.0.0.1/console/api/version
+# Socket.IO (expect 101 or 426, not 308)
+curl -s -o /dev/null -w "%{http_code}" -H "Upgrade: websocket" -H "Connection: Upgrade" \
+  "http://127.0.0.1/socket.io/?EIO=4&transport=websocket"
 ```
-`init_permissions` Exited 0 is normal. Never `compose down -v`.
+Never `compose down -v`. After `--force-recreate`, reload nginx.
 
-## Login
-1. `GET /console/api/setup` = `finished`
-2. POST `/login` with Base64 password
-3. Cookies **and** CSRF
-4. Still 401 → wrong password; do not rotate `SECRET_KEY`
+## Env injection
+Dify compose often **lists** env keys under `environment:`. A value only in `.env` is **not** injected. PG `shared_buffers` etc. may be **hardcoded in the db service `command:`** — editing `POSTGRES_*` in `.env` does nothing. Same trap for `CELERY_AUTO_SCALE`. Verify with `docker exec <api> cat /proc/1/environ`.
 
-## Plugins
-Host can reach marketplace; container often cannot. Download `.difypkg` on the host. Daemon `failed to install dependencies` = missing wheels. Rebuild `simple/` index, delete `cwd/.uv-cache/simple-v24`. `POST .../plugin/tasks/delete_all` clears the red list. Trust `plugin/list` + `local runtime ready`.
-
-## Models / RAG / Agent
-Plugin installed ≠ credentials saved. `high_quality` dataset needs embedding first. Agent tool missing: ready + tool-provider `add` + selected on the node. Studio Skills missing: published + `PUT /workspaces/current/agents/{id}/skills`.
+## Plugins / models / RAG
+Installed ≠ credentials saved. `high_quality` needs embedding. External KB: [Dify knowledge bases](sand-workflow:dify-knowledge-bases). MiniMax is a cloud API — on an air-gap, remove it as the workspace default.
 
 ## Nested Docker
-Image extract `whiteout … operation not permitted` → `fuse-overlayfs`. Containers cannot talk to redis/db → `bridge-nf-call-iptables` dropping ICC.
+`whiteout … operation not permitted` → `fuse-overlayfs`. ICC broken → `bridge-nf-call-iptables`.
 
 ## Do not
-Set `DEPLOYMENT_EDITION=ENTERPRISE` to unlock features. Open container egress with iptables/host proxy if that was already blocked. Delete `volumes/` to fix a plugin.
+Set `DEPLOYMENT_EDITION=ENTERPRISE`. Open container egress with iptables to "fix" marketplace. Delete `volumes/` to fix one plugin. Put host passwords or `SECRET_KEY` into skills/git.

@@ -1,53 +1,35 @@
 ---
 name: Dify agents and tools
 description: >-
-  Use this when building Dify Agent apps, attaching tools,
-  OpenAPI/workflow-as-tool, or configuring agent strategies.
+  Use this when building Dify Agent apps, attaching tools, OpenAPI/workflow-as-tool, or configuring agent strategies.
 ---
 # Dify agents and tools
 
-Use this when building Agent **apps**, attaching tools, or setting strategies. Agent Studio roster / workspace Skills / MCP server: [Dify workspace extras](sand-workflow:dify-workspace-extras). Canvas: [Dify apps and workflows](sand-workflow:dify-apps-and-workflows). Plugins: [Dify plugin install](sand-workflow:dify-plugin-install).
+Use this when building Agent / agent-chat apps or wiring tools. Studio roster (`/agent`) is [Dify workspace extras](sand-workflow:dify-workspace-extras), not this.
 
-## Choose a shape
-- `mode: "agent-chat"` — classic agent (prompt + tool picker in model-config) under `/apps`
-- Chatflow/workflow — drop an **Agent** node (needs `langgenius/agent` strategy plugin)
-- **Agent Studio** — `POST /agent` roster (not an `/apps` row). Follow workspace extras.
+## Three `tool_name` systems (they do not mix)
 
-Optional strategy: `langgenius/self_refine_agent`. Without `langgenius/agent`, Agent nodes are limited.
+| Kind | `tool_name` is | Typical miss |
+|---|---|---|
+| API / OpenAPI | the spec **`operationId`** | using the human title → `Unknown error` |
+| Builtin / plugin | the **plugin tool name** | using the marketplace display name |
+| MCP | the **MCP tool name** | using the server label |
 
-## Enable tools (installed ≠ enabled)
-1. Daemon: `Installed tool: ...` / `local runtime ready`
-2. `GET /console/api/workspaces/current/tool-providers`
-3. Credentials: `POST /workspaces/current/tool-provider/builtin/{provider}/add` (or `update`). Schema: `GET .../builtin/{provider}/credential/schema/{credential_type}`
-4. agent-chat: put tools in `POST /apps/{id}/model-config`
-5. Canvas: Tool node or Agent node → select provider/tool
-6. Studio agent: bind workspace Skills (`PUT /workspaces/current/agents/{id}/skills`) and enable tools the same way
+API tools return **`text` only** (often a JSON string). Parse in a code node. Builtin/plugin tools may expose structured fields.
 
-Also: `GET /workspaces/current/agent-providers` (strategy plugins), `GET /apps/{id}/agent/logs`.
+## Attach
 
-## Intranet tools to prefer
-SQL (`junjiem/db_query`, `hjlarry/database`, `spance/db_client_node`), SQLite, Redis, SSH/SFTP, SMTP (`langgenius/email`), Excel/PDF/Markdown exporters, datetime, maths, **built-in HTTP Request**, **built-in Code**. Point hosts at internal URLs.
+- OpenAPI: import spec, pick operations, then reference `operationId`.
+- Workflow-as-tool: publish the workflow, add as a tool, map start vars.
+- MCP: workspace MCP server first, then attach.
+- HTTP node is **not** an agent tool; it still needs `authorization: {type: no-auth, config: null}` even when unused.
 
-Skip adding more Google/Tavily/Exa/Wolfram unless asked.
+## Agent app
 
-## Custom tools
-- OpenAPI: `POST /workspaces/current/tool-provider/api/add`; test `POST .../api/test/pre`
-- Workflow-as-tool: publish workflow first, then `POST .../tool-provider/workflow/create`
-- MCP **client** (consume an external MCP): tool-provider MCP routes under `/workspaces/current/tool-providers`
-- MCP **server** (expose this app): `/apps/{id}/server` — workspace extras
+Create `agent-chat` (or workflow with an agent node). Strategy plugin must be installed. Model row must have the thought-support flavor the strategy expects (`supported` vs `not_supported` are different entries).
 
-## Strategy knobs
-Self-host `.env`: `MAX_TOOLS_NUM`, `MAX_ITERATIONS_NUM`, `WORKFLOW_CALL_MAX_DEPTH`. Function-calling needs a model that actually supports tools; otherwise ReAct.
+Prefer serial tool calls over join when the vendor's parallel join is flaky. Classifier nodes need a `fail-branch`.
 
 ## Debug
-Tool missing in the Agent UI:
 
-1. Not in `plugin/list` → install
-2. List yes, daemon no `Installed tool` → uv/runtime (plugin install skill)
-3. Runtime yes, picker empty → credentials not `add`ed
-4. Picker yes, run fails → wrong internal URL, SSRF, or missing `user`/inputs
-5. Studio composer empty Skills → skill not published, or not bound
-
-HTTP 4xx from a tool to `10.`/`172.` → `SSRF_PROXY_ALLOW_PRIVATE_IPS`.
-
-Composer on a workflow Agent node: `GET /apps/{id}/workflows/draft/nodes/{node_id}/agent-composer`, `POST .../copy-from-roster`, `.../validate`, `.../save-to-roster`.
+Draft run SSE `node_finished` shows tool input/output. `Unknown error` with no traceback is almost always a wrong `tool_name`. Intranet HTTP tools: `NO_PROXY` (see [Dify intranet](sand-workflow:dify-intranet)).

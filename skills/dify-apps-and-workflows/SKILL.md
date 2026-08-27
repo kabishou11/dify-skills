@@ -1,74 +1,120 @@
 ---
 name: Dify apps and workflows
 description: >-
-  Use this when creating or editing Dify apps, chatflows, workflows, DSL, canvas
-  publish, variables, or triggers.
+  Use this when creating or editing Dify apps, chatflows, workflows, DSL, canvas publish, variables, or triggers.
 ---
 # Dify apps and workflows
 
-Use this when creating or editing apps, the canvas, DSL, or publishing. Login: [Dify console API](sand-workflow:dify-console-api). After publish: [Dify service API](sand-workflow:dify-service-api). Private network: [Dify intranet](sand-workflow:dify-intranet). Human-input / annotations / snippets: [Dify workspace extras](sand-workflow:dify-workspace-extras).
+Use this when creating or editing apps, the canvas, DSL, or publishing. Login: [Dify console API](sand-workflow:dify-console-api). After publish: [Dify service API](sand-workflow:dify-service-api). Failures: [Dify troubleshooting](sand-workflow:dify-troubleshooting).
+
+Field-tested on 1.16.1 production canvases; this tree targets **1.17**. DSL `version` is **not** the Dify software version — `GET /console/api/app-dsl-version` (1.17 exports `0.7.0`; 1.16.1 exports were often `0.1.5`). Never copy a foreign `version`.
 
 ## Create
 ```http
 POST /console/api/apps
 {"name":"发票助手","mode":"workflow","description":"optional, max 400"}
 ```
+`mode`: `chat` | `agent-chat` | `advanced-chat` (chatflow) | `workflow` | `completion`. Agent Studio is `POST /agent`.
 
-`mode`: `chat` | `agent-chat` | `advanced-chat` (chatflow) | `workflow` | `completion`.
+List `GET /apps`. Copy `POST /apps/{id}/copy`. Convert chat → workflow: `POST /apps/{id}/convert-to-workflow`.
 
-List `GET /apps?page=1&limit=20&mode=all`. Recent/starred: `/apps/recent`, `/apps/starred`, `POST /apps/{id}/star`. Get/update/delete `/apps/{id}`. Copy `POST /apps/{id}/copy`. Rename/icon: `POST /apps/{id}/name`, `.../icon`. Convert chat → workflow: `POST /apps/{id}/convert-to-workflow`.
+## Code-first loop (preferred)
 
-Agent Studio is `POST /agent`, not this list.
+Generate JSON (valid YAML) → validate → import **or** sync draft → publish → draft/run every branch. Do not only click the canvas.
 
-## Canvas
-Always **GET draft → mutate graph → POST draft → publish**. Never invent colliding node ids.
+1. Login (Base64 password + cookie + CSRF). Tokens last ~1h (`unauthorized` → login again).
+2. `GET /apps/{id}/workflows/draft` and keep `hash`.
+3. **Import** `POST /apps/imports` `{"mode":"yaml-content","yaml_content":"..."}` creates a **new** app every time.
+4. **Sync in place** (keep URL / API key): `POST /apps/{id}/workflows/draft` (not PATCH) with `graph`, `features`, `environment_variables`, `conversation_variables`, `hash`. Then `POST /apps/{id}/workflows/publish` `{}`.
+5. Debug without WebApp:
+   - workflow: `POST /apps/{id}/workflows/draft/run`
+   - chatflow: `POST /apps/{id}/advanced-chat/workflows/draft/run` with `query` + `conversation_id`
+   Parse SSE `node_finished` (`status`/`outputs`/`error`) and `workflow_finished`.
 
-`POST /apps/{id}/workflows/draft` body:
+`draft_workflow_not_sync` → GET a fresh hash. Stale hash → 400.
 
-- `graph` — nodes, edges, viewport
-- `features` — file upload, speech, etc.
-- `hash` — send back the hash from GET; omit/mismatch can 400 on concurrent edits
-- `conversation_variables` — chatflow only, optional
-- `environment_variable_patch` — env vars
+## DSL top-level
 
-Also:
+```json
+{
+  "version": "<from GET /app-dsl-version>",
+  "kind": "app",
+  "app": {"name":"...","mode":"advanced-chat|workflow","icon":"🔧","icon_background":"#E0F2FE","description":""},
+  "workflow": {
+    "graph": {"nodes":[],"edges":[],"viewport":{"x":0,"y":0,"zoom":0.5}},
+    "features": {},
+    "environment_variables": [],
+    "conversation_variables": []
+  }
+}
+```
 
-- Publish: `POST /apps/{id}/workflows/publish` (GET lists published versions)
-- Restore: `POST /apps/{id}/workflows/{workflow_id}/restore`, `PATCH .../workflows/{workflow_id}`
-- Run workflow: `POST /apps/{id}/workflows/draft/run` with `inputs` (+ optional `files`)
-- Run chatflow: `POST /apps/{id}/advanced-chat/workflows/draft/run` with `query` + `conversation_id`
-- One node: `POST /apps/{id}/workflows/draft/nodes/{node_id}/run` (iteration/loop variants exist)
-- Last run: `GET .../draft/nodes/{node_id}/last-run`
-- Features: `GET/POST /apps/{id}/workflows/draft/features`
-- Vars: `.../environment-variables`, `conversation-variables`, `system-variables`, plus `/workflows/draft/variables`
-- Stop: `POST /apps/{id}/workflow-runs/tasks/{task_id}/stop`
-- Runs: `GET /apps/{id}/workflow-runs` (+ `/{run_id}`, `node-executions`, export). Chatflow: `/apps/{id}/advanced-chat/workflow-runs`
-- Node outputs inspector: `/apps/{id}/workflows/draft/runs/{run_id}/node-outputs`
-- Block configs: `GET .../default-workflow-block-configs`
-- Presence: `POST /apps/workflows/online-users`
-- Comments: `/apps/{id}/workflow/comments`
+- `advanced-chat`: `sys.query` / `sys.files` (array) / **answer** nodes. Features: opening_statement, file_upload, retriever_resource.
+- `workflow`: no `sys.query`. Files live on **start** variables (often a single `file`, not `sys.files`).
+- Write JSON with `json.dump`; do not hand-edit YAML.
 
-## Human input
-`POST /apps/{id}/workflows/draft/human-input/nodes/{node_id}/form/preview` and `/form/run`, `/delivery-test`. Chatflow paths sit under `advanced-chat/`. Token + events live in workspace extras.
+## Node top-level (frontend) vs data.type (engine)
 
-## Built-in nodes (intranet first)
-LLM, Knowledge retrieval, Agent, HTTP Request, Code, If/Else, Iteration, Loop, Template, Variable aggregator, Doc extractor, List operator, Question classifier, Human input, Answer.
+| Field | Required | Missing |
+|---|---|---|
+| top-level `type` | `"custom"` for almost every node | canvas **React #130** (component undefined) |
+| loop start | `"custom-loop-start"` 44×48 | same crash |
+| iteration start | `"custom-iteration-start"` | same class of crash |
+| `position` `{x,y}` | loop children are **relative to parent** | layout junk |
+| `width`/`height` | loop container must cover children | children clip |
+| `data.type` | `llm` / `code` / `loop` / … no prefix | engine invalid |
+| Do **not** write | `positionAbsolute`, child `extent`, loop `outputs` | unofficial |
 
-HTTP to `10.`/`172.` needs `SSRF_PROXY_ALLOW_PRIVATE_IPS`. Code runs in sandbox (no plugin).
+Loop children: `parentId=<loopId>`, `zIndex: 1002`. Edges: `type: custom`, `data: {isInIteration, isInLoop, sourceType, targetType}`. If-else / classifier `sourceHandle` is `true`/`false`/`fail-branch` or the class id — not `source`.
 
-## Triggers / webhooks
-List `GET /workspaces/current/triggers`. Provider info `GET /workspaces/current/trigger-provider/{provider}/info`. Subscriptions under `.../subscriptions/list`. App: `GET /apps/{id}/triggers`, `POST /apps/{id}/trigger-enable`, webhook urls `GET /apps/{id}/workflows/triggers/webhook`. Callbacks use `TRIGGER_URL` (must be reachable by the external system). Public: `/webhook/{id}`, `/webhook-debug/{id}`. Draft trigger test: `POST /apps/{id}/workflows/draft/trigger/run` (+ `/run-all`, per-node).
+Selectors: `["nodeId","field"]`, `["sys","query"]`, `["env","VAR"]`, loop vars `["loopId","var"]`. Templates: `{{#nodeId.field#}}`, `{{#sys.query#}}`, `{{#env.THINK_SWITCH#}}`. Knowledge into LLM: put `{{#context#}}` in the **system** prompt (this generation does not inject context unless you write the placeholder).
 
-## DSL
-Export `GET /apps/{id}/export`. Import `POST /apps/imports` then `.../imports/{id}/confirm`. Check plugins `GET /apps/imports/{app_id}/check-dependencies` then install (plugin install skill).
+## Node gotchas (1.16 field-tested, still the checklist on 1.17)
 
-## Basic chat
-`POST /apps/{id}/model-config`. Canvas apps mostly ignore this. Prompt templates: `GET /app/prompt-templates`. Site: `GET/POST /apps/{id}/site`, `POST .../site-enable`, `POST .../api-enable`. Trace: `GET /apps/{id}/trace`, `GET /apps/{id}/trace-config`. Audio: `POST /apps/{id}/audio-to-text`, `text-to-audio`.
+**LLM.** Must include a **user** message (`No user query found`). `vision.enabled: true` requires `configs.variable_selector` (e.g. `["sys","files"]`) + `detail`, else publish "视觉变量不能为空". Thinking models: `max_tokens` ≥ 16384 or the thought eats the budget and `text` is empty. Fast path: `/no_think` at the end of system. Strip `<think>...</think>` with a code node if the provider surfaces it. `retry_config` + `error_strategy: default-value` are default. Do not enable node `structured_output` on models that lack it — JSON schema in the prompt + code parse.
 
-Debug chat from console: `POST /apps/{id}/chat-messages` (or `/completion-messages`). Conversations: `/apps/{id}/chat-conversations`. Feedbacks: `POST /apps/{id}/feedbacks`, export `GET .../feedbacks/export`.
+**Code.** Input field is **`value_selector`**, not `variable_selector`. Sandbox: stdlib only, `sleep` ≤ 2s. Nested generators: build newlines with `chr(10)` to avoid escape hell. `compile(code, id, "exec")` before import.
 
-## Annotations / stats
-Annotations: `GET /apps/{id}/annotations` (export, batch-import, annotation-reply, hit-histories) — workspace extras. Stats: `/apps/{id}/statistics/daily-messages` (conversations, end-users, token-costs, satisfaction, response-time, tokens-per-second). Workflow stats under `/apps/{id}/workflow/statistics/*`. Logs: `/apps/{id}/workflow-app-logs`, archived `/workflow-archived-logs`.
+**If-else.** Numeric operators are Unicode `≥` `≤` `≠`, not `>=`. Cases use `conditions[]` + `varType`.
+
+**Knowledge-retrieval.** Rerank needs **four** keys: `provider` + `model` (UI) and `reranking_provider_name` + `reranking_model_name` (engine). Wrong provider → `credentials is not initialized`. Rerank `score` may be `None` — gate on chunk **count**, not score. Output is `result` (array). Dataset UUIDs are **this** tenant — remap on another box.
+
+**Tool.** Three name systems: API tools use OpenAPI **`operationId`**; builtin plugins use identity.name; MCP uses MCP names. Mixing them → `Unknown error`. API tool output is **only** `text` (whole JSON string) — parse in code. `provider_id` for API tools is the `tool_api_providers.id` UUID (remap on another box). Builtin `provider_type: builtin` uses a name, not a UUID.
+
+**HTTP request.** Always send `authorization: {"type":"no-auth","config":null}` even when unused. Timeouts are three ints (connect/read/write). Body `data` is a **string** with `{{#...#}}` templates. Intranet hosts: [Dify intranet](sand-workflow:dify-intranet) (`NO_PROXY` / SSRF).
+
+**Loop.** Official pattern: inject via `loop_variables` → children read `[loopId, var]` → in-loop `assigner` v2 writes back → `break_conditions` reference **loop vars**, not child outputs (publish "无效的变量"). Each break condition needs `id` + `varType`. No `outputs` on the loop node. Sleep inside ≤ 2s.
+
+**List-operator.** Output field is `result`. Set `var_type` / `item_var_type`. Workflow start `file` is often a **single** file, not `sys.files`.
+
+**Variable-aggregator.** Merges branches without failing the unused side. Output commonly `output`.
+
+**Document-extractor.** No images — `default-value` empty text and send scans to an OCR tool (e.g. MinerU) instead.
+
+**Question-classifier.** Must have a `fail-branch` edge. `sourceHandle` = class id. Keep temperature low.
+
+**Answer (chatflow).** Template may include `{{#nodeId.field#}}`. Empty leftover placeholders show in the WebApp.
+
+**Assigner.** `version: "2"`, `operation: over-write`, `loop_id` set when inside a loop.
+
+Prefer **serial** over join-heavy graphs: multiple inbound edges can stall as a join. Put `retry_config` + `error_strategy` on LLM/tool/HTTP.
+
+## Bindings when moving DSL between instances
+
+Remap before import: `dataset_ids`, API-tool `provider_id`, model **display** `name` (Dify entry, not the vLLM `served-model-name`). Same volume restore → UUIDs stay, do not rewrite. After remap, re-check the four rerank fields and tool `operationId`.
+
+## Canvas collaboration (editor stuck on "同步数据中")
+
+1.16+ uses **Socket.IO** (`/socket.io/?EIO=4&transport=websocket`), not `/api/ws`. nginx must proxy `/socket.io/` to `api_websocket` with Upgrade headers. `NEXT_PUBLIC_SOCKET_URL` must be a host the **browser** can reach (not `ws://localhost` for remote users). After recreating api/web, `nginx -s reload` (cached upstream IPs → 502).
+
+## Human input / triggers / basic chat
+
+Human input, triggers, site, annotations, stats: same routes as before (workspace extras / this skill's previous map). Site: `POST /apps/{id}/site-enable`. MCP: `POST /apps/{id}/server`.
 
 ## Publish checklist
-Draft node run → full run → publish → `api-enable` / `site-enable` → start vars match caller `inputs`. Optional: MCP `POST /apps/{id}/server`.
+
+1. Every node has top-level `type`.
+2. Vision configs / rerank four fields / classifier fail-branch / loop break `id`+`varType`.
+3. `compile` every code node; edges reference existing ids.
+4. Draft run **every** branch (intent / tool fail / empty retrieve / file / HTTP timeout).
+5. Publish → `api-enable` / `site-enable`. Start variables match caller `inputs`.

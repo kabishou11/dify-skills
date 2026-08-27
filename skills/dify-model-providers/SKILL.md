@@ -1,42 +1,37 @@
 ---
 name: Dify model providers
 description: >-
-  Use this when adding or switching Dify model providers (OpenAI-compatible,
-  vLLM, Xinference, Tongyi, embeddings, ASR).
+  Use this when adding or switching Dify model providers (OpenAI-compatible, vLLM, Xinference, Tongyi, embeddings, ASR).
 ---
 # Dify model providers
 
-Use this when adding LLM / embedding / rerank / STT / TTS. Plugin must already be ready ([Dify plugin install](sand-workflow:dify-plugin-install)). Login: [Dify console API](sand-workflow:dify-console-api).
+Use this when adding or switching LLM / embedding / rerank / ASR providers on self-hosted Dify.
 
-## List and save
-- `GET /console/api/workspaces/current/model-providers`
-- Save: `POST /workspaces/current/model-providers/{provider}/credentials`
-- Validate: `POST .../credentials/validate` — always, before wiring apps
-- Switch: `POST .../credentials/switch`
-- Per-model credentials: `.../model-providers/{provider}/models` and `.../models/credentials`
-- Load defaults: `GET/POST /workspaces/current/default-model`
-- By type: `GET /workspaces/current/models/model-types/{llm|text-embedding|rerank|speech2text|tts}`
+## Load order
 
-`{provider}` is a **path** (may contain `/`). Missing from the list = plugin not `local runtime ready` (daemon logs), not a "wrong URL".
+1. Plugin `local runtime ready` (otherwise the provider is missing).
+2. Save credentials on the provider.
+3. Enable models. The Dify **display `name`** is what canvas/DSL store — it is often **not** vLLM `served-model-name`. Map them explicitly.
 
-## Intranet first
-| Plugin | When |
-|---|---|
-| `langgenius/openai_api_compatible` | Any OpenAI-style gateway (vLLM serve, OneAPI, internal nginx). Set **custom base URL**. |
-| `yangyaofei/vllm` | Direct vLLM (official `langgenius/vllm` often does not exist) |
-| `langgenius/xinference` | Xinference |
-| `langgenius/modelscope` | ModelScope / local |
-| `langgenius/funasr` | Self-host ASR (SenseVoice etc.) |
-| `langgenius/tongyi` | DashScope — needs Aliyun key even on intranet |
-| `langgenius/openai` / `zhipuai` / `moonshot` / `minimax` | Vendor clouds |
+## OpenAI-compatible / vLLM / Xinference
 
-Do not assume `api.openai.com` is reachable. For RAG you need **embedding** (and usually rerank) on the same workspace.
+Base URL is the internal `/v1`. API key can be a dummy string if the server ignores it. `agent_thought_support`: `not_supported` vs `supported` are **two Dify model rows** on the same physical endpoint — pick the one the agent strategy needs.
 
-## Types
-`llm`, `text-embedding`, `rerank`, `speech2text`, `tts`. Add at least: one chat LLM, one embedding. STT: FunASR or OpenAI-compatible whisper.
+Intranet: do not default the workspace to MiniMax / cloud keys. Old MiniMax chat models require `minimax_group_id`; missing it fails every completion. Delete that default or fill Group ID.
 
-## Validate
-After save: `credentials/validate`, then a 1-token chat or a dataset hit-test. Plugin listed but validate fails → wrong endpoint, key, or daemon uv still broken.
+## Credentials vs DB
 
-## System defaults
-Set workspace default LLM / embedding / rerank / speech via `default-model`. New apps inherit these.
+Credentials encrypt with `SECRET_KEY`. Changing the key → `credentials is not initialized`. After plugin-daemon restart, stale `provider_models` rows can orphan — delete the row and re-save.
+
+## Embeddings / rerank / ASR
+
+`high_quality` datasets need a working embedding model. Rerank in a knowledge node needs both UI (`provider`/`model`) and engine (`reranking_provider_name`/`reranking_model_name`) names. FunASR / local ASR: plugin first, then provider credentials.
+
+## Thinking / vision models
+
+- Thinking: `max_tokens` ≥ 16384; optional `/no_think`; strip `<think>` in a code node if the downstream parser chokes.
+- Vision: `vision.enabled` requires `configs.variable_selector` pointing at the file var.
+
+## Do not
+
+Paste cloud keys or host URLs into skills/git. `DEPLOYMENT_EDITION=ENTERPRISE` does not add providers.
