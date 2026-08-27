@@ -4,6 +4,10 @@
 
 Skills on `main` target the Dify version in [`VERSION`](VERSION). If you are writing against an older Dify, say so in the PR.
 
+## Install
+
+End users copy `skills/dify-*` with `scripts/install.sh`. Do not add machine-specific paths to `SKILL.md`. Details: [README](README.md#安装).
+
 ## Skill format
 
 Each skill is `skills/<id>/SKILL.md`:
@@ -32,4 +36,4 @@ python3 scripts/check-skills.py
 
 ## Releases
 
-Do not tag or publish a GitHub Release from a PR. Releases are cut only when a Dify line is frozen; the tag equals that Dify version (`v1.17.0` for Dify 1.17.0). See [README](README.md#versioning).
+Do not tag or publish a GitHub Release from a PR. Releases are cut only when a Dify line is frozen; the tag equals that Dify version (`v1.17.0` for Dify 1.17.0). See [README · 版本策略](README.md#版本策略). Install paths for Cursor / Claude Code / Codex are in [README · 安装](README.md#安装).
