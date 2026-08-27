@@ -48,6 +48,10 @@ First-time box: open `/install` only if setup is `not_started`. Do not POST `/se
 | Files | `POST /files/upload`, `GET /files/{id}/preview` | Dify service API |
 | Keys | `POST /apps/{id}/api-keys`, `POST /apps/{id}/api-enable` | Dify service API |
 | Members / tags | `/workspaces/current/members`, `/tags` | Dify workspace extras |
+| Logs / stats / annotations | `/apps/{id}/chat-conversations`, `/workflow-app-logs`, `/workflow-runs`, `/statistics/*`, `/workflow/statistics/*`, `/annotations` | Dify workspace extras |
+| Agent Studio runtime / sandbox | `/agent/{id}/chat-messages`, `/agent/{id}/logs`, `/agent/{id}/sandbox/*` | Dify workspace extras |
+| Dataset hit-test | `POST /datasets/{id}/hit-testing` | Dify knowledge bases |
+| Triggers | `/apps/{id}/triggers`, `/apps/{id}/trigger-enable` | Dify apps and workflows |
 
 ## After reboot
 Nested/cloud VMs often need **manual `dockerd`**, then `docker compose up -d` from the Dify `docker/` dir. Do not `compose down -v`. See Dify backup and upgrade.

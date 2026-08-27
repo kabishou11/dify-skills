@@ -36,6 +36,9 @@ English: executable [Agent Skills](https://agentskills.io) for operating self-ho
 | 内网 HTTP / RAGFlow 502 | Squid SSRF，把内网主机加进 `NO_PROXY`；`SSRF_PROXY_ALLOW_PRIVATE_IPS` 是 CIDR 不是 `true` | [dify-intranet](skills/dify-intranet/SKILL.md) |
 | 改了 `.env` 画布 Loop 上限不变 | 1.17 要 recreate **web**；运行时限额在 api `WORKFLOW_MAX_*` | [dify-compose-and-config](skills/dify-compose-and-config/SKILL.md) |
 | 邀请邮件发不出去 | Dify 自己的 `MAIL_TYPE=smtp`，不是 email 插件 | [dify-compose-and-config](skills/dify-compose-and-config/SKILL.md) |
+| Webhook 404 / 定时不跑 | 公网路径是 `/triggers/webhook/{id}`；schedule 靠 worker_beat poller | [dify-apps-and-workflows](skills/dify-apps-and-workflows/SKILL.md) |
+| 代码节点 15s 被杀 | `SANDBOX_WORKER_TIMEOUT`，不是「sleep ≤ 2s」 | [dify-apps-and-workflows](skills/dify-apps-and-workflows/SKILL.md) |
+| 知识库 hit-test 空 | 外挂要 `/dify`；rerank 四个字段；关 score_threshold | [dify-knowledge-bases](skills/dify-knowledge-bases/SKILL.md) |
 
 ```mermaid
 flowchart LR
@@ -233,6 +236,8 @@ $dify-troubleshooting
 - 「RAGFlow 接到 Dify 召回全是 0」→ knowledge-bases
 - 「离线把这套 Dify 搬到另一台机器」→ backup-and-upgrade
 - 「把 Loop 上限和 workflow 步数都放开」→ compose-and-config
+- 「给 workflow 加 webhook / 定时」→ apps-and-workflows
+- 「把这次运行的节点日志拉下来」→ workspace-extras
 
 ---
 
@@ -259,11 +264,11 @@ $dify-troubleshooting
 
 | Skill | 何时用 | 你会得到 | 示例 |
 | --- | --- | --- | --- |
-| [dify-apps-and-workflows](skills/dify-apps-and-workflows/SKILL.md) | 建应用、改画布、DSL、发布 | `GET /app-dsl-version`、import vs 原地 draft+hash、Loop / React #130、发布检查单 | `/dify-apps-and-workflows 把这个 JSON 同步进现有 workflow` |
-| [dify-knowledge-bases](skills/dify-knowledge-bases/SKILL.md) | 知识库、切片、召回、外挂 RAGFlow | 上传限制、rerank 四个字段、RAGFlow `.../dify`、关 score_threshold | `/dify-knowledge-bases 接内网 RAGFlow` |
+| [dify-apps-and-workflows](skills/dify-apps-and-workflows/SKILL.md) | 建应用、画布、DSL、触发器、代码节点 | DSL 0.7.0、draft+hash、Loop、`/triggers/webhook/{id}`、sandbox 超时 | `/dify-apps-and-workflows 给这个 workflow 加一个 webhook` |
+| [dify-knowledge-bases](skills/dify-knowledge-bases/SKILL.md) | 知识库、切片、metadata、hit-test、外挂 RAGFlow | metadata/child chunks、hit-test 四字段 rerank、RAGFlow `.../dify` | `/dify-knowledge-bases 对这个库做 hit-test` |
 | [dify-model-providers](skills/dify-model-providers/SKILL.md) | LLM / embedding / rerank / ASR | OpenAI 兼容、vLLM 显示名 vs served-model-name、thinking / vision | `/dify-model-providers 加上内部 vLLM` |
 | [dify-agents-and-tools](skills/dify-agents-and-tools/SKILL.md) | Agent 应用、OpenAPI / workflow 当工具 | 三套 `tool_name`（operationId / 插件名 / MCP 名） | `/dify-agents-and-tools 给 Agent 挂上这份 OpenAPI` |
-| [dify-workspace-extras](skills/dify-workspace-extras/SKILL.md) | 工作区 Skills、Snippet、Agent 花名册、RAG Pipeline、MCP | 1.17 工作区能力，和「本仓库 skills」不是一回事 | `/dify-workspace-extras 建一个 MCP server` |
+| [dify-workspace-extras](skills/dify-workspace-extras/SKILL.md) | 工作区 Skills、Agent Studio 运行时、日志/统计、MCP | sandbox 读文件、build-draft、workflow-app-logs、annotations | `/dify-workspace-extras 把这次 workflow 运行日志拉下来` |
 
 ### 调用、配置、内网、排错、备份
 
