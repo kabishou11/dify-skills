@@ -1,23 +1,55 @@
 ---
 name: Dify knowledge bases
 description: >-
-  Use this when creating Dify knowledge bases, uploading documents, tuning retrieval, or attaching datasets (including external RAGFlow).
+  Use this when creating Dify knowledge bases, uploading documents, tuning retrieval, hit-testing, or attaching datasets (including external RAGFlow).
 ---
 # Dify knowledge bases
 
-Use this when creating, filling, or attaching Dify datasets. External RAGFlow notes below. Prefixes: [Dify API catalog](sand-workflow:dify-api-catalog).
+Use this when creating, filling, hit-testing, or attaching Dify datasets. External RAGFlow notes below. Prefixes: [Dify API catalog](sand-workflow:dify-api-catalog).
 
 ## Create
 
-`POST /console/api/datasets` with `name`, `indexing_technique` (`high_quality` or `economy`), embedding model when high_quality. Attach to an app via the knowledge node `dataset_ids` (UUIDs of **this** instance — remap when copying DSL).
+```http
+POST /console/api/datasets
+{"name":"发票知识库","description":"","indexing_technique":"high_quality","permission":"only_me","provider":"vendor"}
+```
+
+`indexing_technique`: `high_quality` (needs embedding default) or `economy`. `permission`: `only_me` | `all_team_members` | `partial_members`. External KB: `"provider":"external"` plus `external_knowledge_api_id` / `external_knowledge_id`. Attach to an app via the knowledge node `dataset_ids` (UUIDs of **this** instance — remap when copying DSL).
+
+List: `GET /datasets?keyword=&page=1&limit=20`. Detail/update/delete: `/datasets/{id}`.
 
 ## Upload / index
 
 - Console: `POST /console/api/datasets/{id}/documents` (file or text). Batch: `BATCH_UPLOAD_LIMIT` / `UPLOAD_FILE_BATCH_LIMIT`.
 - Size: set **both** `UPLOAD_FILE_SIZE_LIMIT` and `NGINX_CLIENT_MAX_BODY_SIZE` in compose env (and nginx). 413 is almost always nginx.
 - Segment: `INDEXING_MAX_SEGMENTATION_TOKENS_LENGTH`, `TOP_K_MAX_VALUE` (web+API; recreate **web** for the canvas cap). Size knobs: [Dify compose and config](sand-workflow:dify-compose-and-config).
-- Status: `GET /console/api/datasets/{id}/documents`. Hit-test: retrieve endpoint on the dataset.
-- `high_quality` without a working embedding provider → indexing stuck / empty recall.
+- Status: `GET /console/api/datasets/{id}/documents`. `high_quality` without a working embedding provider → indexing stuck / empty recall.
+
+## Hit-test
+
+Console (session):
+
+```http
+POST /console/api/datasets/{id}/hit-testing
+{"query":"发票抬头怎么填","retrieval_model":{"search_method":"semantic_search","reranking_enable":false,"top_k":5,"score_threshold_enabled":false}}
+```
+
+`query` max 250 chars. `search_method`: `semantic_search` | `full_text_search` | `hybrid_search` | `keyword_search`. With rerank:
+
+```json
+{"query":"...","retrieval_model":{"search_method":"semantic_search","reranking_enable":true,"reranking_mode":"reranking_model","reranking_model":{"reranking_provider_name":"<provider>","reranking_model_name":"<display-name>"},"top_k":5,"score_threshold_enabled":false}}
+```
+
+Hybrid may set `weights`. Optional `attachment_ids`. Response `records[]` (segment, score, child_chunks). Empty records → embedding down, threshold too high, or dataset still indexing (`dataset_not_initialized`).
+
+Service API (dataset key; same body): `POST /v1/datasets/{id}/hit-testing` **or** `POST /v1/datasets/{id}/retrieve`.
+
+External KB:
+
+```http
+POST /console/api/datasets/{id}/external-hit-testing
+{"query":"...","external_retrieval_model":{"top_k":5,"score_threshold":0,"score_threshold_enabled":false}}
+```
 
 ## Retrieval in the canvas
 

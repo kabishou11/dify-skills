@@ -57,7 +57,7 @@ POST /v1/chat-messages
 - `streaming`: SSE events include `workflow_started` → `node_started` → `node_finished` → `text_chunk` → `workflow_finished`. Do not `json.loads` the whole body. Read timeout ≥ 600s.
 - `A JSONObject text must begin with '{'` → you used blocking parse on an SSE stream (or the opposite).
 - Chatflow returns `metadata.retriever_resources[]` (content, document_name, dataset_name, score, position, segment_id). **Workflow** apps do not — export the knowledge node's `result` from `end`.
-- Stop / history / conversations / feedback / suggested / audio / human-input / annotations: same paths as before.
+- Stop: `POST /v1/chat-messages/{task_id}/stop`. History: `GET /v1/messages`. Conversations: `GET /v1/conversations`. Feedback: `POST /v1/messages/{id}/feedbacks`. Suggested: `GET /v1/messages/{id}/suggested`. Audio / human-input / annotations: `/v1/audio-to-text`, `/v1/form/human_input/{form_token}`, `/v1/apps/annotations*`.
 
 ## Workflow
 
@@ -67,6 +67,14 @@ POST /v1/workflows/run
 ```
 
 Chatflow uses **chat-messages**, not this. Poll `GET /v1/workflows/run/{id}`. Stop: `POST /v1/workflows/tasks/{task_id}/stop`.
+
+Production logs (app key; `mode=workflow`):
+
+```http
+GET /v1/workflows/logs?keyword=&status=failed&created_at__after=2026-08-01T00:00:00Z&created_at__before=2026-08-27T23:59:59Z&page=1&limit=20
+```
+
+`status`: `succeeded` | `failed` | `stopped`. Optional `created_by_end_user_session_id`, `created_by_account`. No `detail` flag (that is console `/workflow-app-logs`). Node traces stay on console `/workflow-runs/{id}/node-executions`. Dataset hit-test: `POST /v1/datasets/{id}/hit-testing` (same body as console; also aliased as `/retrieve`).
 
 ## WebApp
 

@@ -2,7 +2,7 @@
 name: Dify development
 description: >-
   Use this first for any Dify work — routes to console, plugins, apps, RAG,
-  models, agents, workspace extras, API catalog, compose/env, intranet, debug, backup.
+  models, agents, logs, sandbox, hit-test, workspace extras, API catalog, compose/env, intranet, debug, backup.
 ---
 # Dify development (router)
 
@@ -13,10 +13,15 @@ Use this first when the user wants anything Dify-related. Pick one skill and fol
 | Login, CSRF, which URL, reboot, "just operate Dify" | Dify console API |
 | Which prefix (`/console/api` vs `/v1` vs `/api` vs `/openapi/v1` vs MCP / inner) | Dify API catalog |
 | Workspace Skills, snippets, Agent roster, RAG pipeline, MCP, members, tags, annotations, plugin endpoints, human input | Dify workspace extras |
+| Workflow / conversation logs, node traces, app statistics, annotations | Dify workspace extras |
+| Agent Studio debug chat, logs, sandbox files | Dify workspace extras |
 | Install / repair / list plugins, Marketplace empty, uv failed | Dify plugin install |
 | Create/edit chat, chatflow, workflow, DSL, publish canvas | Dify apps and workflows |
 | Code-first DSL, Loop/Iteration, React #130, draft `hash`, `app-dsl-version` | Dify apps and workflows |
+| Workflow schedule (cron), webhook / plugin trigger, enable/disable, `TRIGGER_URL` | Dify apps and workflows |
+| Code node sandbox (`value_selector`, stdlib, `/dependencies`, timeouts) | Dify apps and workflows |
 | Knowledge base, upload docs, retrieval, RAGFlow external | Dify knowledge bases |
+| Dataset hit-test / retrieve | Dify knowledge bases |
 | LLM / embedding / rerank / ASR / vLLM / OpenAI-compatible | Dify model providers |
 | Agent-chat tools, OpenAPI tools, workflow-as-tool, `operationId` | Dify agents and tools |
 | Agent Studio roster (`/agent`), bind Skills, composer | Dify workspace extras |
@@ -24,7 +29,7 @@ Use this first when the user wants anything Dify-related. Pick one skill and fol
 | App `404`, CSRF, plugin red, "同步数据中", nginx 502 after recreate | Dify troubleshooting |
 | Call `/v1/chat-messages` or `/v1/workflows/run`, API keys, `Invalid upload file` | Dify service API |
 | Backup, upgrade, air-gap pack, both Postgres DBs, `.env` drift | Dify backup and upgrade |
-| Workers, timeouts, uploads, workflow/loop caps, nginx, postgres, mail, `.env` injection | Dify compose and config |
+| Workers, timeouts, uploads, workflow/loop caps, sandbox/code execution, trigger URLs (`TRIGGER_URL`, `ENDPOINT_URL_TEMPLATE`, `WEBHOOK_REQUEST_BODY_MAX_SIZE`, `SANDBOX_WORKER_TIMEOUT`, `ENABLE_WORKFLOW_SCHEDULE_POLLER_TASK`), nginx, postgres, mail, `.env` injection | Dify compose and config |
 | Private network, no SaaS, SSRF, `NO_PROXY`, internal vLLM/SQL | Dify intranet |
 
 ## Hard rules (every Dify task)

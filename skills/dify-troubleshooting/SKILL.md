@@ -44,6 +44,10 @@ Use this when Dify is up but something fails. Changing workers/timeouts/.env: [D
 | `credentials is not initialized` | model row on the wrong provider, or orphan `provider_models` after daemon restart |
 | `CONSOLE_API_URL` points at `api:5001` in the browser | leave `CONSOLE_API_URL`/`APP_API_URL` empty (relative via nginx) |
 | 403 on `/rbac` | community |
+| Empty `/workflow-app-logs` or `/workflow-runs` | default `triggered_from=debugging`; cleanup already ran | production needs `triggered_from=app-run`; see extras + `WORKFLOW_LOG_CLEANUP_*` |
+| `/workflow-app-logs` 400 on a chat app | route is `mode=workflow` | use `/chat-conversations` |
+| Agent debug `blocking` 400 | Studio is SSE-only | `response_mode=streaming` |
+| Hit-test empty `records` | embedding down / threshold / still indexing | disable `score_threshold`; wait for index; RAGFlow use 0 |
 
 ## Compose health
 ```bash

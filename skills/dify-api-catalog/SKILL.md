@@ -42,6 +42,8 @@ All paths below are under `/console/api`.
 | `/workspaces/current/plugin/*` | Dify plugin install |
 | `/agent`, `/agent/{id}/*`, `/apps/{id}/server`, `/workspaces/current/skills` | Dify workspace extras + agents and tools |
 | `/workspaces/current/customized-snippets`, `/snippets/{id}/workflows` | Dify workspace extras |
+| `/apps/{id}/chat-conversations`, `/workflow-app-logs`, `/workflow-runs`, `/statistics/*`, `/workflow/statistics/*`, `/annotations` | Dify workspace extras |
+| `/apps/{id}/triggers`, `/apps/{id}/trigger-enable`, `/apps/{id}/workflows/triggers/webhook` | Dify apps and workflows |
 | `/v1/*` after publish | Dify service API |
 
 ## `/v1` service API (complete)

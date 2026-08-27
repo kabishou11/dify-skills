@@ -168,9 +168,20 @@ Keep `DEPLOYMENT_EDITION=COMMUNITY`. `/rbac` `/billing` 403 is expected.
 
 Recreate api+web (and worker for mail/tasks). Confirm with `GET /console/api/system-features`.
 
-## Logging
+## Logging and workflow-log retention
 
-`LOG_LEVEL`, `LOG_TZ` (default UTC — set `Asia/Shanghai` if that is the operator TZ), `LOG_OUTPUT_FORMAT`, `ENABLE_REQUEST_LOGGING`, `WORKFLOW_LOG_CLEANUP_ENABLED` / `RETENTION_DAYS`. Files: `docker compose logs` and `/app/logs/server.log` in api/worker.
+`LOG_LEVEL`, `LOG_TZ` (default UTC — set `Asia/Shanghai` if that is the operator TZ), `LOG_OUTPUT_FORMAT`, `ENABLE_REQUEST_LOGGING`. Files: `docker compose logs` and `/app/logs/server.log` in api/worker.
+
+Workflow **run** rows (Postgres), not api log files. Keys live in `docker/envs/core-services/shared.env` (copy from `*.env.example` or they never appear). Recreate **worker_beat** (+ worker) after change.
+
+| Key | Default | Role |
+|---|---|---|
+| `WORKFLOW_LOG_CLEANUP_ENABLED` | false | Beat schedules `clean_workflow_runlogs_precise` at 02:00 (worker_beat TZ, usually UTC) |
+| `WORKFLOW_LOG_RETENTION_DAYS` | 30 | Delete runs older than this; cascades messages / annotations / thoughts |
+| `WORKFLOW_LOG_CLEANUP_BATCH_SIZE` | 100 | Rows per batch |
+| `WORKFLOW_LOG_CLEANUP_SPECIFIC_WORKFLOW_IDS` | empty | Comma-separated **workflow** ids; empty = all |
+
+HTTP to list remaining rows: [Dify workspace extras](sand-workflow:dify-workspace-extras) (`/workflow-app-logs`, `/workflow-runs`). Empty logs after enabling cleanup is expected once the cutoff passes.
 
 ## Storage (local default)
 
