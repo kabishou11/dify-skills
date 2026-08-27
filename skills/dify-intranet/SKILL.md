@@ -5,7 +5,7 @@ description: >-
 ---
 # Dify intranet
 
-Use this when Dify sits on a private network or air-gapped host. Plugin packs: [Dify plugin install](sand-workflow:dify-plugin-install). Offline move: [Dify backup and upgrade](sand-workflow:dify-backup-and-upgrade).
+Use this when Dify sits on a private network or air-gapped host. Plugin packs: [Dify plugin install](sand-workflow:dify-plugin-install). Offline move: [Dify backup and upgrade](sand-workflow:dify-backup-and-upgrade). Compose knobs: [Dify compose and config](sand-workflow:dify-compose-and-config).
 
 ## Defaults
 
@@ -19,12 +19,9 @@ Use this when Dify sits on a private network or air-gapped host. Plugin packs: [
 
 HTTP nodes, OpenAPI tools, and external knowledge all go through Dify's SSRF proxy. Private `10.`/`192.168.`/`172.16.` targets often 502.
 
-Fix in compose (must appear under the api `environment:` list, not only `.env`):
+`SSRF_PROXY_ALLOW_PRIVATE_IPS` is a **CIDR list**, not a boolean (`10.0.0.0/8,172.16.0.0/12,192.168.0.0/16`). Hostnames go in `SSRF_PROXY_ALLOW_PRIVATE_DOMAINS`. Recreate **ssrf_proxy** (entrypoint writes Squid ACLs).
 
-- Add the internal hosts to **`NO_PROXY`** (and `no_proxy`) alongside `localhost,127.0.0.1,api,...`.
-- And/or `SSRF_PROXY_ALLOW_PRIVATE_IPS=true` if your threat model allows it.
-
-Then recreate **api + worker**, `nginx -s reload`. Verify with `docker exec <api> printenv NO_PROXY`.
+Also add internal hosts to api+worker **`NO_PROXY`** / `no_proxy` (`localhost,127.0.0.1,api,...`). Recreate api+worker. Verify `docker exec <api> printenv NO_PROXY` and `docker exec <ssrf_proxy> printenv SSRF_PROXY_ALLOW_PRIVATE_IPS`.
 
 ## Models
 
@@ -40,7 +37,7 @@ Host-downloaded `.difypkg` + local PEP 503 index. Do not open container egress w
 
 ## Compose traps that look like "intranet bugs"
 
-- `.env` keys not listed in compose `environment:` never reach the process.
+- 1.17 api/worker/web load `.env` via env_file; nginx/ssrf/weaviate/db still need listed keys. See compose-and-config.
 - After recreate, nginx 502 until `nginx -s reload`.
 - Plugin icons 503: dedicated nginx location for `/console/api/workspaces/current/plugin/icon`.
 - `MILVUS_USER`/`MILVUS_PASSWORD` required when using Milvus.

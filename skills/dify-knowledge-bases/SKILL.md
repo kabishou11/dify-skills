@@ -15,7 +15,7 @@ Use this when creating, filling, or attaching Dify datasets. External RAGFlow no
 
 - Console: `POST /console/api/datasets/{id}/documents` (file or text). Batch: `BATCH_UPLOAD_LIMIT` / `UPLOAD_FILE_BATCH_LIMIT`.
 - Size: set **both** `UPLOAD_FILE_SIZE_LIMIT` and `NGINX_CLIENT_MAX_BODY_SIZE` in compose env (and nginx). 413 is almost always nginx.
-- Segment: `INDEXING_MAX_SEGMENTATION_TOKENS_LENGTH`, `TOP_K_MAX_VALUE`, `EMBEDDING_BATCH_SIZE`.
+- Segment: `INDEXING_MAX_SEGMENTATION_TOKENS_LENGTH`, `TOP_K_MAX_VALUE` (web+API; recreate **web** for the canvas cap). Size knobs: [Dify compose and config](sand-workflow:dify-compose-and-config).
 - Status: `GET /console/api/datasets/{id}/documents`. Hit-test: retrieve endpoint on the dataset.
 - `high_quality` without a working embedding provider → indexing stuck / empty recall.
 

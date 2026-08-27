@@ -23,7 +23,7 @@ English: executable [Agent Skills](https://agentskills.io) for operating self-ho
 | --- | --- | --- |
 | 登录 `401 Invalid encrypted data` | 密码要 **Base64**，不是 RSA / 明文 | [dify-console-api](skills/dify-console-api/SKILL.md) |
 | `401 CSRF` / 一小时后又挂 | Cookie 没有 `X-CSRF-Token`，或 session 过期 | [dify-console-api](skills/dify-console-api/SKILL.md) |
-| 改了 `.env` 容器里看不到 | 只有写进 compose `environment:` 的键才会注入 | [dify-troubleshooting](skills/dify-troubleshooting/SKILL.md) |
+| 改了 `.env` 容器里看不到 | 1.17 api/worker/web 会读 `.env`；nginx/ssrf/db 仍要 listed keys；高级项在 `docker/envs/` | [dify-compose-and-config](skills/dify-compose-and-config/SKILL.md) |
 | 重建 api 后 nginx `502` | 上游 IP 缓存，要 `nginx -s reload` | [dify-troubleshooting](skills/dify-troubleshooting/SKILL.md) |
 | 画布一直「同步数据中」 | 1.16+ 走 Socket.IO `/socket.io/`，`NEXT_PUBLIC_SOCKET_URL` 必须浏览器能访问 | [dify-troubleshooting](skills/dify-troubleshooting/SKILL.md) |
 | React error #130 | DSL 节点缺顶层 `type: "custom"` | [dify-apps-and-workflows](skills/dify-apps-and-workflows/SKILL.md) |
@@ -33,7 +33,9 @@ English: executable [Agent Skills](https://agentskills.io) for operating self-ho
 | 工具 `Unknown error` | `tool_name` 必须是 OpenAPI `operationId`，不是显示名 | [dify-agents-and-tools](skills/dify-agents-and-tools/SKILL.md) |
 | 离线搬家后插件/密钥全废 | 漏了 `dify_plugin` 库、`SECRET_KEY` 或 `plugin_packages/` | [dify-backup-and-upgrade](skills/dify-backup-and-upgrade/SKILL.md) |
 | `/rbac` `/billing` 403 | 社区版功能开关，不是 CSRF 坏了 | [dify-development](skills/dify-development/SKILL.md) |
-| 内网 HTTP / RAGFlow 502 | Squid SSRF，把内网主机加进 `NO_PROXY` | [dify-intranet](skills/dify-intranet/SKILL.md) |
+| 内网 HTTP / RAGFlow 502 | Squid SSRF，把内网主机加进 `NO_PROXY`；`SSRF_PROXY_ALLOW_PRIVATE_IPS` 是 CIDR 不是 `true` | [dify-intranet](skills/dify-intranet/SKILL.md) |
+| 改了 `.env` 画布 Loop 上限不变 | 1.17 要 recreate **web**；运行时限额在 api `WORKFLOW_MAX_*` | [dify-compose-and-config](skills/dify-compose-and-config/SKILL.md) |
+| 邀请邮件发不出去 | Dify 自己的 `MAIL_TYPE=smtp`，不是 email 插件 | [dify-compose-and-config](skills/dify-compose-and-config/SKILL.md) |
 
 ```mermaid
 flowchart LR
@@ -47,10 +49,11 @@ flowchart LR
   R --> S["service-api<br/>已发布 /v1"]
   R --> T["troubleshooting<br/>挂了先看这"]
   R --> B["backup-and-upgrade"]
+  R --> CFG["compose-and-config"]
   R --> I["intranet"]
 ```
 
-助手只加载技能的 `name` + `description`；匹配上了才读全文。所以 **从 [dify-development](skills/dify-development/SKILL.md) 进**，不要一次塞 14 份正文。
+助手只加载技能的 `name` + `description`；匹配上了才读全文。所以 **从 [dify-development](skills/dify-development/SKILL.md) 进**，不要一次塞全部正文。
 
 ---
 
@@ -229,6 +232,7 @@ $dify-troubleshooting
 - 「内网 Dify 装不上 Marketplace 插件」→ plugin-install + intranet
 - 「RAGFlow 接到 Dify 召回全是 0」→ knowledge-bases
 - 「离线把这套 Dify 搬到另一台机器」→ backup-and-upgrade
+- 「把 Loop 上限和 workflow 步数都放开」→ compose-and-config
 
 ---
 
@@ -261,7 +265,7 @@ $dify-troubleshooting
 | [dify-agents-and-tools](skills/dify-agents-and-tools/SKILL.md) | Agent 应用、OpenAPI / workflow 当工具 | 三套 `tool_name`（operationId / 插件名 / MCP 名） | `/dify-agents-and-tools 给 Agent 挂上这份 OpenAPI` |
 | [dify-workspace-extras](skills/dify-workspace-extras/SKILL.md) | 工作区 Skills、Snippet、Agent 花名册、RAG Pipeline、MCP | 1.17 工作区能力，和「本仓库 skills」不是一回事 | `/dify-workspace-extras 建一个 MCP server` |
 
-### 调用、内网、排错、备份
+### 调用、配置、内网、排错、备份
 
 | Skill | 何时用 | 你会得到 | 示例 |
 | --- | --- | --- | --- |
@@ -269,6 +273,7 @@ $dify-troubleshooting
 | [dify-intranet](skills/dify-intranet/SKILL.md) | 内网 / 断网 | `NO_PROXY`、空 `CONSOLE_API_URL`、关掉 Marketplace 探测 | `/dify-intranet 这台机器没有外网` |
 | [dify-troubleshooting](skills/dify-troubleshooting/SKILL.md) | 已经坏了 | 按症状分层：CSRF、uv、413、SSRF、Socket.IO、compose vs .env | `/dify-troubleshooting 插件图标 503` |
 | [dify-backup-and-upgrade](skills/dify-backup-and-upgrade/SKILL.md) | 备份、升级、搬家、重启后拉起 | 两套 Postgres、同一把 `SECRET_KEY`、插件包、合并 compose | `/dify-backup-and-upgrade 做一份可离线恢复的包` |
+| [dify-compose-and-config](skills/dify-compose-and-config/SKILL.md) | 改 compose / `.env` / nginx / 社区版限额 | 1.17 `env_file` 规则、workers、超时栈、画布 vs 运行时两套限额、邮件、登录开关 | `/dify-compose-and-config 把 Loop 上限和 workflow 步数都放开` |
 
 ### 技能之间怎么跳
 
@@ -288,6 +293,7 @@ flowchart TD
   Models --> Intra
   Svc --> Intra
   Dev --> Debug["dify-troubleshooting"]
+  Dev --> Cfg["dify-compose-and-config"]
   Dev --> Bak["dify-backup-and-upgrade"]
 ```
 
