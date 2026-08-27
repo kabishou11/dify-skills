@@ -14,6 +14,12 @@ FORBIDDEN = (
     re.compile(r"zl@dify"),
     re.compile(r"gho_[A-Za-z0-9]+"),
     re.compile(r"sk-[A-Za-z0-9]{10,}"),
+    re.compile(r"pbocwx", re.I),
+    re.compile(r"zhulei@"),
+    re.compile(r"wx@qq\.com"),
+    re.compile(r"app-blPfU6KGVCAbMIBGB4DADo8b"),
+    re.compile(r"192\.168\.33\."),
+    re.compile(r"10\.10\.1\.4"),
 )
 errors: list[str] = []
 skills = sorted(p for p in SKILLS.glob("*/SKILL.md"))

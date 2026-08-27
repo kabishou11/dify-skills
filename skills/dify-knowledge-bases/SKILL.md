@@ -1,55 +1,47 @@
 ---
 name: Dify knowledge bases
 description: >-
-  Use this when creating Dify knowledge bases, uploading documents, tuning
-  retrieval, or attaching datasets (including external RAGFlow).
+  Use this when creating Dify knowledge bases, uploading documents, tuning retrieval, or attaching datasets (including external RAGFlow).
 ---
 # Dify knowledge bases
 
-Use this when creating datasets, uploading docs, tuning retrieval, or attaching knowledge to an app. Models first: [Dify model providers](sand-workflow:dify-model-providers). RAG **pipeline** canvas: [Dify workspace extras](sand-workflow:dify-workspace-extras).
+Use this when creating, filling, or attaching Dify datasets. External RAGFlow notes below. Prefixes: [Dify API catalog](sand-workflow:dify-api-catalog).
 
 ## Create
-`POST /console/api/datasets` with:
 
-- `name`
-- `indexing_technique`: `high_quality` (embeddings) or `economy` (keyword only)
-- embedding provider + model (required for `high_quality`)
-- retrieval: vector / keyword / hybrid; optional rerank model
-- permission: workspace vs only me
+`POST /console/api/datasets` with `name`, `indexing_technique` (`high_quality` or `economy`), embedding model when high_quality. Attach to an app via the knowledge node `dataset_ids` (UUIDs of **this** instance — remap when copying DSL).
 
-List `GET /datasets`. One: `GET/PATCH/DELETE /datasets/{id}`. `GET .../use-check`, `.../related-apps`, `.../indexing-status`, `.../error-docs`, `.../queries`.
+## Upload / index
 
-No embedding configured → high_quality create/index fails. Hit-test before wiring an app: `POST /datasets/{id}/hit-testing`. External: `POST .../external-hit-testing`. Retrieval defaults: `GET /datasets/retrieval-setting`.
+- Console: `POST /console/api/datasets/{id}/documents` (file or text). Batch: `BATCH_UPLOAD_LIMIT` / `UPLOAD_FILE_BATCH_LIMIT`.
+- Size: set **both** `UPLOAD_FILE_SIZE_LIMIT` and `NGINX_CLIENT_MAX_BODY_SIZE` in compose env (and nginx). 413 is almost always nginx.
+- Segment: `INDEXING_MAX_SEGMENTATION_TOKENS_LENGTH`, `TOP_K_MAX_VALUE`, `EMBEDDING_BATCH_SIZE`.
+- Status: `GET /console/api/datasets/{id}/documents`. Hit-test: retrieve endpoint on the dataset.
+- `high_quality` without a working embedding provider → indexing stuck / empty recall.
 
-## Documents
-`POST /datasets/{id}/documents` — upload, raw text, or crawl. Init empty: `POST /datasets/init`.
+## Retrieval in the canvas
 
-- Rules: `GET /datasets/process-rule` (`automatic` vs `custom` chunk size / overlap / separators). Chinese: smaller chunks than English prose if using character/GSE tokenization.
-- Status: `GET /datasets/{id}/documents/{doc_id}/indexing-status` or `.../batch/{batch}/indexing-status`
-- Pause / resume: `PATCH .../documents/{doc_id}/processing/pause` and `.../resume`. Batch status: `PATCH .../documents/status/{action}/batch`. Retry: `POST .../retry`. Rename: `POST .../rename`.
-- Download: `GET .../documents/{doc_id}/download`, zip `.../documents/download-zip`.
-- Pipeline log: `GET .../documents/{doc_id}/pipeline-execution-log`. Summary: `POST .../documents/generate-summary`.
+Knowledge node + LLM: put `{{#context#}}` in the **system** prompt. Export the node's `result` (or `output`) from `end` if you need citations on a **workflow** app — only chatflow puts `retriever_resources` on `/v1/chat-messages`.
 
-## Segments (console)
-`GET /datasets/{id}/documents/{doc_id}/segments`. Add: `POST .../segment`. Patch one: `PATCH .../segments/{segment_id}`. Batch enable/disable: `PATCH .../segment/{action}`. Batch import: `POST .../segments/batch_import`. Child chunks: `POST .../segments/{segment_id}/child_chunks`, delete `.../child_chunks/{id}`.
+Rerank needs **four** fields: `provider` + `model` (UI) and `reranking_provider_name` + `reranking_model_name` (engine). Missing either pair → "Rerank 模型不能为空".
 
-Metadata: `POST /datasets/{id}/metadata`, `PATCH .../metadata/{id}`, built-in `GET /datasets/metadata/built-in`, bind on docs `POST .../documents/metadata`.
+## External knowledge (RAGFlow and friends)
 
-## In an app
-Chatflow/workflow: **Knowledge retrieval** node → dataset ids, top_k, score, rerank. Basic chat: attach in `model-config`.
+Dify POSTs `{endpoint}/retrieval`. The endpoint you save must **already include** `/dify` (or the vendor's adapter prefix):
 
-External KB (intranet RAGFlow, custom HTTP, Bedrock): install the plugin, then `GET/POST /datasets/external-knowledge-api` and create an **external** dataset (`/datasets/external`). Example plugin id `witmeng/ragflow-api`.
+- Right: `http://ragflow-host:9380/api/v1/dify`
+- Wrong: `http://ragflow-host:9380/api/v1` (404)
 
-## RAG pipeline
-For a visual ingest graph (datasource → process → index), do **not** only POST `/datasets`. Use `/rag/pipeline/dataset` or `/rag/pipeline/empty-dataset`, then the `/rag/pipelines/{id}/workflows/draft` loop in workspace extras. Publish may 403 on community (`knowledge_pipeline.publish_enabled`). Convert an existing dataset: `POST /rag/pipelines/transform/datasets/{dataset_id}`.
+RAGFlow `/dify/retrieval` returns **raw hybrid scores** (often 0.01–0.3). There is **no reranker** on that path. If Dify `score_threshold` is 0.5, every chunk is dropped. Set threshold **off or 0**; judge by recall/order, not the number.
 
-Website crawl: `POST /website/crawl`, poll `GET /website/crawl/status/{job_id}`. Notion: `/data-source/integrates`, `/notion/pre-import/pages`.
+SSRF: private RAGFlow URLs need `NO_PROXY` (see [Dify intranet](sand-workflow:dify-intranet)).
 
-## Chinese / Weaviate
-On compose Weaviate: `WEAVIATE_TOKENIZATION=character` and `WEAVIATE_ENABLE_TOKENIZER_GSE=true` help CJK. Embedding model must also be CJK-capable.
+API key for the external KB is stored encrypted under `SECRET_KEY` — changing the key blanks it.
 
-## Size / parsers
-Capped by `UPLOAD_FILE_SIZE_LIMIT` **and** `NGINX_CLIENT_MAX_BODY_SIZE` — raise both. PDFs: MinerU plugin or Unstructured (`ETL_TYPE`). 413 = nginx, not the dataset API.
+## Metadata / tags / segments
 
-## Service ingest
-Dataset API key (`GET/POST /datasets/api-keys`, per-dataset `/datasets/{id}/api-keys`) + `POST /v1/datasets/{id}/document/create-by-file` (or create-by-text). See Dify service API.
+Dataset metadata, document segments, tags: console `/datasets/{id}/...`. Service API dataset keys can do the same under `/v1`.
+
+## Move / copy
+
+`dataset_ids` in DSL are UUIDs. After import on a new instance they still point at the old ids unless you remap. External KB configs are per-workspace, not inside the DSL.

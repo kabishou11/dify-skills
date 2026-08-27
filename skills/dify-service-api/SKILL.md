@@ -1,12 +1,11 @@
 ---
 name: Dify service API
 description: >-
-  Use this when calling published Dify apps via /v1 (chat-messages,
-  workflows/run), API keys, WebApp, or file upload.
+  Use this when calling published Dify apps via /v1 (chat-messages, workflows/run), API keys, WebApp, or file upload.
 ---
 # Dify service API
 
-Use this when calling a published Dify app or dataset from code: chat, workflow run, file upload, API keys, WebApp. Prefix map: [Dify API catalog](sand-workflow:dify-api-catalog). Human-input / MCP / annotations extras: [Dify workspace extras](sand-workflow:dify-workspace-extras).
+Use this when calling a published Dify app or dataset from code. Prefix map: [Dify API catalog](sand-workflow:dify-api-catalog). File/user rules below were the #1 migration break from 1.10 → 1.16+ and still apply on 1.17.
 
 ## Surfaces
 
@@ -15,72 +14,75 @@ Use this when calling a published Dify app or dataset from code: chat, workflow 
 | Console | session cookie + `X-CSRF-Token` | `/console/api` |
 | **Service (this skill)** | `Authorization: Bearer {api_key}` | `/v1` |
 | WebApp | passport / site token | `/api` |
-| OpenAPI / difyctl | OAuth bearer | `/openapi/v1` (off unless `OPENAPI_ENABLED` + `ENABLE_OAUTH_BEARER`) |
+| OpenAPI / difyctl | OAuth bearer | `/openapi/v1` |
 | MCP | `server_code` | `/mcp/server/{code}/mcp` |
 
-Enable the app API: `POST /console/api/apps/{id}/api-enable`. Create a key: `POST /console/api/apps/{id}/api-keys`. Dataset keys: `/console/api/datasets/api-keys` or `/datasets/{id}/api-keys`. Agent Studio keys: `/console/api/agent/{id}/api-enable` + `/agent/{id}/api-keys`.
+Enable API: `POST /console/api/apps/{id}/api-enable`. Create a key: `POST /console/api/apps/{id}/api-keys`. One key is bound to **one app** — reusing it across apps → 401/404. Never store the key in a skill file.
 
-Never put the key in a skill file. Show it once to the user.
+There is often **no** `/v1/chat/completions`. Use `chat-messages` / `workflows/run`.
 
-## Chat (chat / chatflow / agent-chat / studio)
+## `user` is a data scope (not a comment)
 
-```http
-POST /v1/chat-messages
-Authorization: Bearer APP_KEY
-Content-Type: application/json
+Official meaning: unique within the app; resources created with one `user` are only visible with the same `user`.
 
+- Use a **stable** id (UUID or your product user id).
+- Do **not** use the API key, a timestamp, or a random value per request.
+- Upload and run **must** use the same `user` **and** the same API key.
+
+## Files (FileAccessController, 1.16+)
+
+`POST /v1/files/upload` (multipart) then pass the returned id. Console `POST /console/api/files/upload` files are **not** valid for `/v1` or WebApp — `Invalid upload file`.
+
+File variable shape is a **single object**, not a string and not an array of ids:
+
+```json
 {
-  "query": "你好",
-  "user": "user-123",
-  "response_mode": "streaming",
-  "conversation_id": "",
-  "inputs": {},
-  "files": []
+  "transfer_method": "local_file",
+  "upload_file_id": "<id>",
+  "type": "document"
 }
 ```
 
-- `user` is required (end-user id you choose).
-- `response_mode`: `streaming` (SSE) or `blocking`. Agent Studio keys may be **streaming-only**.
-- Continue a thread by passing back `conversation_id`.
-- Stop: `POST /v1/chat-messages/{task_id}/stop`
-- History: `GET /v1/messages?conversation_id=`
-- Conversations: `GET/DELETE /v1/conversations`, rename `POST .../name`, variables `GET/PATCH /v1/conversations/{id}/variables`
-- Feedback: `POST /v1/messages/{id}/feedbacks`, list `GET /v1/app/feedbacks`
-- Suggested: `GET /v1/messages/{id}/suggested`
-- Completion apps: `POST /v1/completion-messages` (+ stop)
-- Events: `GET /v1/workflow/{task_id}/events`
-- Human input: `GET/POST /v1/form/human_input/{form_token}`
-- Annotations: `/v1/apps/annotations`, `/v1/apps/annotation-reply/{action}`
-- Audio: `POST /v1/audio-to-text`, `/v1/text-to-audio`
+`file in input form must be a file` → you passed an array/string. Preview: `/v1/files/{id}/preview`.
 
-## Workflow
+## Chat
+
 ```http
-POST /v1/workflows/run
-{"inputs": {"foo": "bar"}, "user": "user-123", "response_mode": "blocking"}
+POST /v1/chat-messages
+{"query":"你好","user":"<stable-id>","response_mode":"blocking","conversation_id":"","inputs":{},"files":[]}
 ```
 
-Also `POST /v1/workflows/{workflow_id}/run`. Poll `GET /v1/workflows/run/{workflow_run_id}`. Stop: `POST /v1/workflows/tasks/{task_id}/stop`. Logs: `GET /v1/workflows/logs`.
+- `user` required. Continue with `conversation_id`.
+- Prefer **`blocking`** when you only need the final JSON (long RAG/tools: HTTP timeout **≥ 600s**).
+- `streaming`: SSE events include `workflow_started` → `node_started` → `node_finished` → `text_chunk` → `workflow_finished`. Do not `json.loads` the whole body. Read timeout ≥ 600s.
+- `A JSONObject text must begin with '{'` → you used blocking parse on an SSE stream (or the opposite).
+- Chatflow returns `metadata.retriever_resources[]` (content, document_name, dataset_name, score, position, segment_id). **Workflow** apps do not — export the knowledge node's `result` from `end`.
+- Stop / history / conversations / feedback / suggested / audio / human-input / annotations: same paths as before.
 
-Chatflow uses **chat-messages**, not workflows/run.
+## Workflow
 
-## Files
-`POST /v1/files/upload` (multipart) then pass the `id` in `files` on chat/workflow. Preview: `/v1/files/{id}/preview`. Console uploads: `POST /console/api/files/upload`. Signed public: `/files/{id}/file-preview` and `/image-preview`.
+```http
+POST /v1/workflows/run
+{"inputs":{"foo":"bar"},"user":"<stable-id>","response_mode":"blocking"}
+```
 
-## WebApp (share site)
-`POST /console/api/apps/{id}/site-enable`. Site settings: `GET/POST /apps/{id}/site`. Public chat uses **`/api`** with the site token, not the service API key. Reset token: `POST /apps/{id}/site/access-token-reset`. Passport: `GET /api/passport`.
+Chatflow uses **chat-messages**, not this. Poll `GET /v1/workflows/run/{id}`. Stop: `POST /v1/workflows/tasks/{task_id}/stop`.
 
-## Dataset service API
-Same Bearer dataset key. Create by text/file (`create-by-text` **and** `create_by_text` aliases), list documents, status batch, segments + child_chunks, hit-testing `/v1/datasets/{id}/retrieve`, metadata, tags (`/v1/datasets/tags`, binding).
+## WebApp
 
-## Parameters / info
-`GET /v1/parameters`, `/v1/info`, `/v1/meta`, `/v1/site` — what the WebApp needs (opening statement, file types). Workspace models (if the key allows): `/v1/workspaces/current/models/model-types/{model_type}`.
+`POST /console/api/apps/{id}/site-enable`. Public chat is `/api` + site token, not the service key. Console uploads ≠ WebApp uploads.
 
-## OpenAPI
-`POST /openapi/v1/apps/{id}:run`, `:stop`, DSL import, human-input-forms. Health: `GET /openapi/v1/_health`. Skip unless those env flags are on.
+## Dataset `/v1`
+
+Bearer dataset key. create-by-text / create-by-file (and snake_case aliases), segments, retrieve, metadata, tags.
 
 ## Failure patterns
-- 401: wrong key or API not enabled.
-- 400 unused inputs: workflow start variables must match `inputs` keys.
-- Streaming parse: SSE `data: {json}` lines; do not assume a single JSON body.
-- File URLs from tools may use `INTERNAL_FILES_URL` (`http://api:5001`) which browsers cannot open — keep public `FILES_URL` for humans.
-- Hitting `/console/api/...` with a Bearer app key fails; that is the wrong surface.
+
+| Error | Cause | Fix |
+|---|---|---|
+| `Invalid upload file` | user or key mismatch; console file used on `/v1` | same user + same key; upload on `/v1` |
+| `file in input form must be a file` | array/string | single file object |
+| 401 | wrong key / API off / key from another app | enable + matching key |
+| unused inputs | start vars ≠ `inputs` keys | match names |
+| Broken pipe / client timeout | read timeout too small | ≥ 600s |
+| 404 on `/v1/chat/completions` | endpoint not enabled | `chat-messages` |
