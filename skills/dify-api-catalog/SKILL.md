@@ -6,7 +6,7 @@ description: >-
 ---
 # Dify API catalog (1.17)
 
-Use this to pick the right prefix and skill. Do not invent HTTP. Full scan dump: `/workspace/dify-ops/06-api-catalog.md` (re-scan `api/controllers` if the tree moved).
+Use this to pick the right prefix and skill. Do not invent HTTP. Re-scan `api/controllers` in your Dify checkout if the tree moved.
 
 Login / CSRF: [Dify console API](sand-workflow:dify-console-api). Workspace Skills / Agent roster / RAG pipeline / MCP / members: [Dify workspace extras](sand-workflow:dify-workspace-extras).
 
@@ -70,4 +70,4 @@ Enable on an app: `GET/POST/PUT /console/api/apps/{id}/server`, rotate `POST ...
 
 1. Match the prefix table.
 2. Open the matching skill. Do not copy a console path onto `/v1`.
-3. If still missing, `rg '@console_ns.route' /workspace/dify/api/controllers` or read the dump. Re-scan beats guessing methods.
+3. If still missing, `rg '@console_ns.route' api/controllers` in the Dify source tree. Re-scan beats guessing methods.

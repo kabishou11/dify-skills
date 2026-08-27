@@ -1,0 +1,5 @@
+# Compatibility pin for this tree (main).
+# A GitHub Release is not cut until this line is frozen.
+dify: 1.17.0
+status: unreleased
+channel: main
