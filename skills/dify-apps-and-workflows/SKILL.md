@@ -105,13 +105,15 @@ Prefer **serial** over join-heavy graphs: multiple inbound edges can stall as a 
 
 **Prompt wording.** Do not write “OCR后的正文” in a non-OCR workflow. It confuses operators into adding OCR nodes.
 
+**Human Input.** Do not put a Human Input node inside a Loop (1.17 still stalls). Keep HITL on the main chain.
+
 ## Bindings when moving DSL between instances
 
 Remap before import: `dataset_ids`, API-tool `provider_id`, model **display** `name` (Dify entry, not the vLLM `served-model-name`). Same volume restore → UUIDs stay, do not rewrite. After remap, re-check the four rerank fields and tool `operationId`. Trigger `subscription_id` / plugin `provider_id` are **this** tenant — rebuild the plugin subscription, do not copy foreign IDs.
 
 ## Canvas collaboration (editor stuck on "同步数据中")
 
-1.16+ uses **Socket.IO** (`/socket.io/?EIO=4&transport=websocket`), not `/api/ws`. nginx must proxy `/socket.io/` to `api_websocket` with Upgrade headers. `NEXT_PUBLIC_SOCKET_URL` must be a host the **browser** can reach (not `ws://localhost` for remote users). After recreating api/web, `nginx -s reload` (cached upstream IPs → 502).
+1.16+ uses **Socket.IO** (`/socket.io/?EIO=4&transport=websocket`), not `/api/ws`. nginx must proxy `/socket.io/` to `api_websocket` with Upgrade headers. `NEXT_PUBLIC_SOCKET_URL` must be a host the **browser** can reach (not `ws://localhost` for remote users). After recreating api/web, `nginx -s reload` (cached upstream IPs → 502) — but **start `api_websocket` first** or nginx dies with `host not found in upstream`.
 
 ## Logs / annotations / human input
 

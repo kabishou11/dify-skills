@@ -28,6 +28,12 @@ Working tree on `main`. **No GitHub Release yet.**
   - DSL: `GET /app-dsl-version` (1.17 = `0.7.0`); every node needs top-level `type: custom`; Loop `break_conditions` need `id`+`varType` on loop vars; rerank needs four name fields; tools use OpenAPI `operationId`.
   - Intranet: `NO_PROXY` for SSRF, empty `CONSOLE_API_URL`/`APP_API_URL`/`CHECK_UPDATE_URL`, `MARKETPLACE_ENABLED=false`.
   - 1.17 `POST .../workflows/draft` no longer accepts `environment_variables` (`extra_forbidden`). Use `environment_variable_patch`. Do not mix OCR tool loops into a text-PDF app via if-else; keep OCR as a separate published app. Multiple inbound edges to one LLM are a join stall. Product backends run the published graph, not draft.
+  - 1.17 Console **GET** requires `X-CSRF-Token`. Unauthenticated `/` → 307 `/signin`. Agent Studio is `GET /agent`, not `/apps`. Skip `GET /version` (422 without a `query` shape).
+  - Upgrade: merge compose (never replace a customized file), pin image digests, rolling `--no-deps --force-recreate`, wait for worker Alembic, never `down -v`. Rollback after migration is `pg_restore` both DBs. Do not enable workflow/conversation log cleanup by accident. Do not nginx-reload while `api_websocket` is down.
+  - Web SSR needs `SERVER_CONSOLE_API_URL=http://api:5001`; browser `CONSOLE_API_URL`/`APP_API_URL` stay empty. `plugin-daemon` tag is independent of api/web.
+  - Same physical vLLM: two Dify rows (`agent_thought_support` supported vs not). Fast path = not_supported + `/no_think`. Display `name` may lag `served-model-name`.
+  - `/v1` file ACL is per app key + `user`. Uploading with app A then running app B → `Invalid upload file`.
+  - 1.17.0: treat workspace Skill file upload, FastMCP OAuth, QA-segment answer PATCH, Agent Studio tool calling, and Human Input inside Loop as unstable. Demo on classic workflow + `/v1`.
 
 ### Notes
 - Community edition only. RBAC / billing / some RAG publish endpoints 403 by design.

@@ -114,7 +114,9 @@ Raising Loop max without recreating web does nothing in the UI. Raising UI witho
 
 ## Nginx
 
-`NGINX_CLIENT_MAX_BODY_SIZE`, proxy timeouts, `NGINX_HTTPS_ENABLED`, ports, `NGINX_SOCKET_IO_UPSTREAM` (default `api_websocket:5001`). Recreate nginx to apply. Reload only after api/web IP change.
+`NGINX_CLIENT_MAX_BODY_SIZE`, proxy timeouts, `NGINX_HTTPS_ENABLED`, ports, `NGINX_SOCKET_IO_UPSTREAM` (default `api_websocket:5001`). Recreate nginx to apply templates. `nginx -s reload` only after api/web/websocket IP change.
+
+Do not reload (or recreate) nginx while `api_websocket` is stopped: `host not found in upstream "api_websocket:5001"` takes down the whole console with 502. Start websocket first, then reload.
 
 ## Postgres and Redis
 
@@ -130,7 +132,7 @@ Redis password is `command: redis-server --requirepass`. Changing `REDIS_PASSWOR
 
 ## URLs
 
-Leave `CONSOLE_API_URL` and `APP_API_URL` **empty** (browser relative via nginx). `SERVER_CONSOLE_API_URL=http://api:5001`. `INTERNAL_FILES_URL=http://api:5001` (plugins, not the browser). `NEXT_PUBLIC_SOCKET_URL` = what the **browser** can reach. Air-gap: `CHECK_UPDATE_URL=` empty, `MARKETPLACE_ENABLED=false`. Triggers: `TRIGGER_URL`, `ENDPOINT_URL_TEMPLATE`.
+Leave `CONSOLE_API_URL` and `APP_API_URL` **empty** (browser relative via nginx). `SERVER_CONSOLE_API_URL=http://api:5001` is **required** for 1.17 Next.js SSR (missing → “Server console API URL is not configured”). `INTERNAL_FILES_URL=http://api:5001` (plugins, not the browser). `NEXT_PUBLIC_SOCKET_URL` = what the **browser** can reach. Air-gap: `CHECK_UPDATE_URL=` empty, `MARKETPLACE_ENABLED=false`. Triggers: `TRIGGER_URL`, `ENDPOINT_URL_TEMPLATE`.
 
 ## SSRF (short)
 
@@ -148,7 +150,7 @@ This is Dify's invite / reset / email-code mailer, **not** the email plugin.
 
 ## Community gates
 
-Keep `DEPLOYMENT_EDITION=COMMUNITY`. `/rbac` `/billing` 403 is expected.
+Keep `DEPLOYMENT_EDITION=COMMUNITY`. `/rbac` `/billing` 403 is expected. 1.17 still accepts a leftover `EDITION=` in `.env`; the process reads `DEPLOYMENT_EDITION`.
 
 | Key | Typical |
 |---|---|
@@ -157,7 +159,8 @@ Keep `DEPLOYMENT_EDITION=COMMUNITY`. `/rbac` `/billing` 403 is expected.
 | `ENABLE_EMAIL_PASSWORD_LOGIN` | true |
 | `ENABLE_EMAIL_CODE_LOGIN` | false (needs mail) |
 | `ENABLE_COLLABORATION_MODE` | true, and `collaboration` in `COMPOSE_PROFILES` |
-| `ENABLE_SKILL` | true (workspace Skills) |
+| `ENABLE_SKILL` | true (workspace Skills UI). 1.17.0 **upload** of Skill files is buggy — leave the flag on if you already use the library, but do not demo upload until a patch. |
+| `ENABLE_CONVERSATION_CLEANUP_TASK` | **false** unless you want beat to delete old chats |
 | `OPENAPI_ENABLED` + `ENABLE_OAUTH_BEARER` | both true for difyctl |
 | `DISABLE_TELEMETRY` | true on intranet |
 | `CREATORS_PLATFORM_FEATURES_ENABLED` | false on air-gap |

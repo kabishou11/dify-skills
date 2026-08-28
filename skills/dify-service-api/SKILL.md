@@ -45,6 +45,8 @@ File variable shape is a **single object**, not a string and not an array of ids
 
 `file in input form must be a file` → you passed an array/string. Preview: `/v1/files/{id}/preview`.
 
+A product backend that **uploads with app A's key** then **runs app B** will get `Invalid upload file` (ACL is per app + user). Re-upload with B's key, or have a proxy duplicate the upload. Do not "fix" this by passing the API key as `user`.
+
 ## Chat
 
 ```http

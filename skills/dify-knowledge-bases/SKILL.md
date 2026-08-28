@@ -74,6 +74,10 @@ API key for the external KB is stored encrypted under `SECRET_KEY` — changing 
 
 Dataset metadata, document segments, tags: console `/datasets/{id}/...`. Service API dataset keys can do the same under `/v1`.
 
+**QA segments.** 1.17.0 has a bug where updating a QA pair via API can **wipe `answer`**. Do not batch-PATCH QA answers until a patch; edit in the UI or wait.
+
+Hit-test (`/hit-testing`) does **not** apply canvas metadata filters. To verify department isolation, run the knowledge-retrieval **node** (draft/run), not hit-test.
+
 ## Move / copy
 
 `dataset_ids` in DSL are UUIDs. After import on a new instance they still point at the old ids unless you remap. External KB configs are per-workspace, not inside the DSL.

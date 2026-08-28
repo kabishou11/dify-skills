@@ -14,7 +14,11 @@ Use this when Dify is up but something fails. Changing workers/timeouts/.env: [D
 | Connection refused on `:80` | nginx / compose / dockerd |
 | `/install` loops | admin not created |
 | `401 Invalid encrypted data` | password not **Base64** |
-| `401 CSRF` / `unauthorized` | missing CSRF, or session ~1h expired |
+| `401 CSRF` / `unauthorized` | missing CSRF **on GET too**, or session ~1h expired |
+| Unauthenticated `/` is 307 `/signin` | 1.17 WebApp; follow redirects or open `/signin` |
+| `Server console API URL is not configured` | web missing `SERVER_CONSOLE_API_URL=http://api:5001` |
+| nginx 502 `host not found in upstream "api_websocket"` | websocket container down during nginx reload — start it first |
+| Agent missing from `GET /apps` | roster is `GET /agent` |
 | Plugin red / uv `exit status 1` | daemon cannot reach PyPI / local index |
 | UI "N failed tasks" but list ok | stale tasks; `POST .../plugin/tasks/delete_all` |
 | Provider missing | plugin not `local runtime ready` |
@@ -60,7 +64,7 @@ curl -sS http://127.0.0.1/console/api/version
 curl -s -o /dev/null -w "%{http_code}" -H "Upgrade: websocket" -H "Connection: Upgrade" \
   "http://127.0.0.1/socket.io/?EIO=4&transport=websocket"
 ```
-Never `compose down -v`. After `--force-recreate`, reload nginx.
+Never `compose down -v`. After `--force-recreate`, reload nginx **only if** `api_websocket` is already up.
 
 ## Env injection
 1.17: api / worker / worker_beat / web / plugin_daemon / sandbox have `env_file` including `./.env`, so keys in `.env` **do** inject. nginx / ssrf_proxy / weaviate / redis / db still only see listed `environment:` or `command:` interpolation. Copy `docker/envs/**/*.env.example` → `*.env` or advanced knobs never appear. `POSTGRES_*` and `CELERY_AUTO_SCALE` **are** interpolated in 1.17. Verify with `docker exec <svc> printenv KEY`. Procedure: [Dify compose and config](sand-workflow:dify-compose-and-config).

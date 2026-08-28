@@ -19,18 +19,19 @@ curl -c /tmp/dify-cookies.txt -X POST "$DIFY/console/api/login" \
 CSRF=$(awk '$6=="csrf_token"{print $7}' /tmp/dify-cookies.txt)
 ```
 
-Every later mutating call: `-b /tmp/dify-cookies.txt -H "X-CSRF-Token: $CSRF"`. Cookie without CSRF → `401 CSRF token is missing or invalid`. Access token cookies expire ~1h; login again. `POST /refresh-token` if you still have the refresh cookie.
+Every later Console call (GET included): `-b /tmp/dify-cookies.txt -H "X-CSRF-Token: $CSRF"`. Cookie without CSRF → `401 CSRF token is missing or invalid`. 1.17 validates CSRF on **reads**, not only POST/PUT/DELETE. Access token cookies expire ~1h; login again. `POST /refresh-token` if you still have the refresh cookie.
 
-Sanity: `GET /console/api/setup` (`finished` = admin exists), `GET /console/api/account/profile`, `GET /console/api/version`, `GET /console/api/features`, `GET /console/api/system-features`.
+Sanity: `GET /console/api/setup` (`finished` = admin exists), `GET /console/api/account/profile`, `GET /console/api/features`, `GET /console/api/system-features`, `GET /console/api/app-dsl-version`. Skip `GET /version` unless you know its `query` shape — 1.17 returns 422 without it. `GET /` unauthenticated → **307** `/signin` is normal, not a broken install.
 
 First-time box: open `/install` only if setup is `not_started`. Do not POST `/setup` if already finished.
 
 ## Conventions
 - Prefix `/console/api`. Default compose nginx is `:80`.
-- JSON in/out. Files: multipart (`POST /files/upload`; GET on the same path is metadata). Support types: `GET /files/support-type`.
+- JSON in/out. Files: multipart (`POST /files/upload`; GET on the same path is metadata). Support types: `GET /files/support-type`. Console uploads are **not** valid on `/v1`.
 - Prefer this API over clicking the UI. Browser only for `/install`, OAuth, captcha.
 - Never write passwords or `SECRET_KEY` into skills/git. Changing `SECRET_KEY` after boot logs everyone out and breaks signed file URLs.
 - Keep `DEPLOYMENT_EDITION=COMMUNITY`.
+- `GET /apps` is classic apps (`workflow` / `advanced-chat` / `agent-chat` / …). Agent Studio roster is `GET /agent` and will not show up in `/apps`. Do not report “the agent app was deleted”.
 
 ## Endpoint map
 | Area | Routes | Next skill |

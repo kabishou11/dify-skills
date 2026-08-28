@@ -11,6 +11,8 @@ Use this for Console surfaces that are not the core app canvas, plugins, or data
 
 These are **Dify** Skills / Agents, not Cursor skills.
 
+**1.17.0 caution.** Workspace Skill **zip/blob upload**, FastMCP OAuth, and Agent Studio tool calling have open upstream bugs. Keep the HTTP map below for when they work; do not build a customer demo on them until a patch release. Classic `mode: workflow` + `/v1` is the stable path.
+
 Community: `/workspaces/current/rbac/*` and `/billing/*` 403 or empty. RAG pipeline **publish** is gated by `knowledge_pipeline.publish_enabled` (403 if off). Agent Studio still works as community APIs unless a handler is wrapped with a license gate.
 
 ## Workspace Skills (Agent Skill files)
@@ -56,7 +58,7 @@ Inspect files already on an agent/app: `/agent/{id}/config/skills` and `/apps/{i
 
 ## Agent roster (Agent Studio)
 
-This is **not** `mode: agent-chat`. Roster agents live under `/agent`.
+This is **not** `mode: agent-chat`. Roster agents live under `/agent`. They do **not** appear in `GET /apps` — an empty or shorter app list is not data loss.
 
 ```http
 POST /agent

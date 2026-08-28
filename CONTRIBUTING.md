@@ -23,10 +23,12 @@ description: >-
 
 - `description` must start with **Use this when**.
 - Prefer Console API over the browser. Give real paths and payloads.
+- 1.17 Console **GET** needs `X-CSRF-Token`, not only POST.
 - Do not invent HTTP. Confirm in Dify source `api/controllers` or a live `GET`.
-- No secrets, no machine-specific paths (`/workspace/...`, `/home/box/...`).
+- Field-test on a real box, then **generalize**: no secrets, no machine IPs, no app ids, no tenant UUIDs, no `/data/...` paths.
 - Keep `DEPLOYMENT_EDITION=COMMUNITY`. Do not document pirated Enterprise flags.
 - Intranet-capable tools first. Do not add SaaS search plugins unless the user asked.
+- Keep each `SKILL.md` body ≤ 500 lines.
 
 ## Checks
 
