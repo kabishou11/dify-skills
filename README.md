@@ -26,6 +26,7 @@ English: executable [Agent Skills](https://agentskills.io) for operating self-ho
 | 改了 `.env` 容器里看不到 | 1.17 api/worker/web 会读 `.env`；nginx/ssrf/db 仍要 listed keys；高级项在 `docker/envs/` | [dify-compose-and-config](skills/dify-compose-and-config/SKILL.md) |
 | 重建 api 后 nginx `502` | 上游 IP 缓存，要 `nginx -s reload` | [dify-troubleshooting](skills/dify-troubleshooting/SKILL.md) |
 | 画布一直「同步数据中」 | 1.16+ 走 Socket.IO `/socket.io/`，`NEXT_PUBLIC_SOCKET_URL` 必须浏览器能访问 | [dify-troubleshooting](skills/dify-troubleshooting/SKILL.md) |
+| `POST .../workflows/draft` 400 `environment_variables extra_forbidden` | 1.17 图同步不再收顶层 env 列表 | [dify-apps-and-workflows](skills/dify-apps-and-workflows/SKILL.md) |
 | React error #130 | DSL 节点缺顶层 `type: "custom"` | [dify-apps-and-workflows](skills/dify-apps-and-workflows/SKILL.md) |
 | `Invalid upload file` | `/v1` 上传和运行必须同一 API key + 同一稳定 `user` | [dify-service-api](skills/dify-service-api/SKILL.md) |
 | 外挂知识库 404 / 召回全被滤掉 | RAGFlow 端点要带 `/dify`；那条路径没有 rerank，阈值要关 | [dify-knowledge-bases](skills/dify-knowledge-bases/SKILL.md) |

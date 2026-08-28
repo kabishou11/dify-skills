@@ -44,6 +44,7 @@ Use this first when the user wants anything Dify-related. Pick one skill and fol
 9. Service API: same API key + same stable `user` for upload and run. Console uploads are invalid on `/v1`.
 10. DSL `version` comes from `GET /console/api/app-dsl-version` (1.17 = `0.7.0`). Never paste a 1.16 `0.1.5` export onto 1.17. Every canvas node needs top-level `type: "custom"` or the UI throws React #130.
 11. 1.17 env: api/worker/web/plugin_daemon/sandbox load `.env` via `env_file` (optional knobs in `docker/envs/*.env`). nginx/ssrf/weaviate/db still need listed `environment:` / `command:`. After recreating api/web, `nginx -s reload`. Knobs: [Dify compose and config](sand-workflow:dify-compose-and-config).
+12. 1.17 `POST /apps/{id}/workflows/draft` is `graph`+`features`+`hash` (+ `conversation_variables`). Top-level `environment_variables` → 400 `extra_forbidden`. Env edits: `environment_variable_patch`. Product backends run **published**, not draft.
 
 ## Order of work for a new Dify box
 1. Compose up, `GET /console/api/setup`

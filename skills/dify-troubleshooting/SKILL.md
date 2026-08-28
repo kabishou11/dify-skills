@@ -27,6 +27,7 @@ Use this when Dify is up but something fails. Changing workers/timeouts/.env: [D
 | Logged out / file URLs die | `SECRET_KEY` changed after boot (also kills model credential decrypt) |
 | After reboot, nothing listens | nested boxes: manual `dockerd`, then compose up |
 | Draft save 400 / `draft_workflow_not_sync` | stale workflow `hash` |
+| Draft save 400 `environment_variables` `extra_forbidden` | 1.17 dropped top-level `environment_variables` on graph sync. Send `graph`+`features`+`hash`; env edits use `environment_variable_patch` |
 | Canvas "同步数据中" / React #130 | Socket.IO `/socket.io/` missing, `NEXT_PUBLIC_SOCKET_URL=localhost`, or DSL nodes lack top-level `type: custom` |
 | Plugin icons 503 | nginx `console_limit` burst; give `/plugin/icon` its own location without limit |
 | Recreate api/web then 502 | nginx cached upstream IP → `nginx -s reload` |
