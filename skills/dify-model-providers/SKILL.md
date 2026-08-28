@@ -18,7 +18,12 @@ Use this when adding or switching LLM / embedding / rerank / ASR providers on se
 
 ## OpenAI-compatible / vLLM / Xinference
 
-Base URL is the internal `/v1`. API key can be a dummy string if the server ignores it. `agent_thought_support`: `not_supported` vs `supported` are **two Dify model rows** on the same physical endpoint — pick the one the agent strategy needs.
+Base URL is the internal `/v1`. API key can be a dummy string if the server ignores it. `agent_thought_support`: `not_supported` vs `supported` are **two Dify model rows** on the same physical endpoint.
+
+- Fast / no visible chain-of-thought: the `not_supported` row **and** put `/no_think` at the end of the system prompt. That row still lets the model think internally if you omit `/no_think` — you just will not see it, and it still eats `max_tokens`.
+- Visible reasoning: the `supported` row, `max_tokens` ≥ 16384, strip `<think>` downstream.
+
+The Dify **display `name`** is what canvas/DSL store. It often lags the vLLM `served-model-name` (operators rename the GPU process and forget the Dify row). Map them; do not “fix” DSL by pasting the served name into `model.name`.
 
 ```http
 GET /workspaces/current/model-providers
@@ -65,7 +70,7 @@ Credentials encrypt with `SECRET_KEY`. Changing the key → `credentials is not 
 
 ## Thinking / vision models
 
-- Thinking: `max_tokens` ≥ 16384; optional `/no_think`; strip `<think>` in a code node if the downstream parser chokes.
+- Thinking: `max_tokens` ≥ 16384 on the `supported` row; on the `not_supported` row always add `/no_think`. Strip `<think>` in a code node if the downstream parser chokes.
 - Vision: `vision.enabled` requires `configs.variable_selector` pointing at the file var.
 
 ## Failure patterns

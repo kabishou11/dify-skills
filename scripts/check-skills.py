@@ -11,13 +11,20 @@ SKILLS = ROOT / "skills"
 FORBIDDEN = (
     re.compile(r"/workspace/"),
     re.compile(r"/home/box\b"),
+    re.compile(r"/data/docker"),
+    re.compile(r"/data/docs"),
+    re.compile(r"/data/project"),
     re.compile(r"zl@dify"),
     re.compile(r"gho_[A-Za-z0-9]+"),
     re.compile(r"sk-[A-Za-z0-9]{10,}"),
     re.compile(r"pbocwx", re.I),
+    re.compile(r"pboc_open"),
+    re.compile(r"hetonshencha"),
+    re.compile(r"xyjk_"),
     re.compile(r"zhulei@"),
     re.compile(r"wx@qq\.com"),
     re.compile(r"app-blPfU6KGVCAbMIBGB4DADo8b"),
+    re.compile(r"app-[A-Za-z0-9]{20,}"),
     re.compile(r"192\.168\.33\."),
     re.compile(r"10\.10\.1\.4"),
 )
@@ -45,6 +52,9 @@ for path in skills:
         errors.append(f"{rel}: description should say when to use the skill")
     if len(body.strip()) < 200:
         errors.append(f"{rel}: body too short")
+    nlines = body.count("\n") + 1
+    if nlines > 520:
+        errors.append(f"{rel}: SKILL.md body {nlines} lines (keep ≤500; split a reference.md)")
     for pat in FORBIDDEN:
         if pat.search(text):
             errors.append(f"{rel}: forbidden pattern {pat.pattern}")

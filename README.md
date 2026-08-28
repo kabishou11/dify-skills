@@ -22,7 +22,13 @@ English: executable [Agent Skills](https://agentskills.io) for operating self-ho
 | 你碰到的现象 | 真正原因 | 用哪个 skill |
 | --- | --- | --- |
 | 登录 `401 Invalid encrypted data` | 密码要 **Base64**，不是 RSA / 明文 | [dify-console-api](skills/dify-console-api/SKILL.md) |
-| `401 CSRF` / 一小时后又挂 | Cookie 没有 `X-CSRF-Token`，或 session 过期 | [dify-console-api](skills/dify-console-api/SKILL.md) |
+| `401 CSRF` / 一小时后又挂 | Cookie 没有 `X-CSRF-Token`（**GET 也要**），或 session 过期 | [dify-console-api](skills/dify-console-api/SKILL.md) |
+| 登录后首页 307 | 1.17 未登录跳 `/signin`，不是装坏了 | [dify-console-api](skills/dify-console-api/SKILL.md) |
+| Web SSR “Server console API URL is not configured” | web 缺 `SERVER_CONSOLE_API_URL=http://api:5001` | [dify-compose-and-config](skills/dify-compose-and-config/SKILL.md) |
+| nginx 502 `host not found in upstream api_websocket` | websocket 停着就 reload 了 nginx | [dify-troubleshooting](skills/dify-troubleshooting/SKILL.md) |
+| `GET /apps` 少了一个 Agent | Agent Studio 在 `GET /agent` | [dify-console-api](skills/dify-console-api/SKILL.md) |
+| 改了画布演示还是旧图 | `/v1` 跑的是 **published** | [dify-apps-and-workflows](skills/dify-apps-and-workflows/SKILL.md) |
+| 文本 PDF 应用画布上还有 OCR | 文本版和 OCR 版必须拆成两个应用 | [dify-apps-and-workflows](skills/dify-apps-and-workflows/SKILL.md) |
 | 改了 `.env` 容器里看不到 | 1.17 api/worker/web 会读 `.env`；nginx/ssrf/db 仍要 listed keys；高级项在 `docker/envs/` | [dify-compose-and-config](skills/dify-compose-and-config/SKILL.md) |
 | 重建 api 后 nginx `502` | 上游 IP 缓存，要 `nginx -s reload` | [dify-troubleshooting](skills/dify-troubleshooting/SKILL.md) |
 | 画布一直「同步数据中」 | 1.16+ 走 Socket.IO `/socket.io/`，`NEXT_PUBLIC_SOCKET_URL` 必须浏览器能访问 | [dify-troubleshooting](skills/dify-troubleshooting/SKILL.md) |
@@ -199,8 +205,8 @@ flowchart TB
 
 1. **先分流。** 任何 Dify 任务先 `/dify-development`（或把这句话写进规则）。它会指到下面某一份，不要让模型自己猜 URL。
 2. **给助手实例信息，不要写进技能文件。** 例如：`DIFY=http://127.0.0.1`、管理员邮箱、compose 目录。密码、`SECRET_KEY`、API Key 放本地 secrets，永远不要 commit。
-3. **用技能里的 HTTP，不要发明。** 控制台是 Cookie + `X-CSRF-Token`；已发布调用是 `Authorization: Bearer`。
-4. **一次做一件。** 登录 → 模型 → 插件 → 知识库 → 应用 → 发布 → `/v1` 验证。
+3. **用技能里的 HTTP，不要发明。** 控制台是 Cookie + `X-CSRF-Token`（1.17 的 GET 也要带）；已发布调用是 `Authorization: Bearer`。
+4. **一次做一件。** 登录 → 模型 → 插件 → 知识库 → 应用 → 发布 → `/v1` 验证。画布改完不等于产品可用。
 
 ### 示例对话
 

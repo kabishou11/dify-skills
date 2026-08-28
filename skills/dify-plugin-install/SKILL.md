@@ -27,6 +27,8 @@ Poll `GET .../plugin/tasks`. Healthy list: `GET .../plugin/list`. Daemon must lo
 
 Install **3–8 at a time**. One bad id can fail a batch.
 
+`plugin-daemon` image tag is **independent** of `api`/`web`. After a Dify upgrade, if every model provider goes red, bump daemon to the version in that release (1.17 needed a newer `*-local` daemon than 1.16). Do not assume `api:1.17.0` implies the old daemon still works.
+
 ## Offline / no-egress (nested cloud VMs)
 Do **not** open iptables FORWARD or a host CONNECT proxy.
 

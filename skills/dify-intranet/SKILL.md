@@ -12,6 +12,7 @@ Use this when Dify sits on a private network or air-gapped host. Plugin packs: [
 - Prefer tools that talk to **your** HTTP / SQL / OpenAI-compatible / vLLM / Xinference / RAGFlow. Do not add SaaS search/crawler plugins.
 - Marketplace is usually unreachable. Set `MARKETPLACE_ENABLED=false` and `CHECK_UPDATE_URL=` (empty) so the UI stops probing the public catalog.
 - Leave `CONSOLE_API_URL` and `APP_API_URL` **empty** so the browser uses relative `/console/api` through nginx. Pointing them at `http://api:5001` makes the user's browser talk to a Docker DNS name.
+- 1.17 **web SSR** still needs `SERVER_CONSOLE_API_URL=http://api:5001` (container-to-container). Missing → “Server console API URL is not configured” on first paint.
 - `NEXT_PUBLIC_SOCKET_URL` must be a URL the **browser** can reach (the public/intranet host, not `ws://localhost` and not the container hostname). Canvas sync uses `/socket.io/` → `api_websocket`.
 - `INTERNAL_FILES_URL=http://api:5001` is for **plugin containers** previewing files, not for the browser.
 
@@ -38,7 +39,7 @@ Host-downloaded `.difypkg` + local PEP 503 index. Do not open container egress w
 ## Compose traps that look like "intranet bugs"
 
 - 1.17 api/worker/web load `.env` via env_file; nginx/ssrf/weaviate/db still need listed keys. See compose-and-config.
-- After recreate, nginx 502 until `nginx -s reload`.
+- After recreate, nginx 502 until `nginx -s reload` (and `api_websocket` must already be up).
 - Plugin icons 503: dedicated nginx location for `/console/api/workspaces/current/plugin/icon`.
 - `MILVUS_USER`/`MILVUS_PASSWORD` required when using Milvus.
 

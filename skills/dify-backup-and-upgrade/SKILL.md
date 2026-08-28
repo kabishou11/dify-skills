@@ -48,18 +48,30 @@ Low-RAM targets: drop `SERVER_WORKER_AMOUNT`, `CELERY_MAX_WORKERS`, `POSTGRES_SH
 
 Start `dockerd` if needed, confirm storage-driver, `compose up -d`, `GET /console/api/setup`.
 
-## Upgrade (pin a GitHub tag, not `main`)
+## Upgrade (pin a GitHub tag + digest, not `:latest` / `main`)
 
-1. Read release notes (env renames: 1.17 `EDITION` → `DEPLOYMENT_EDITION`). Keep `COMMUNITY`.
-2. Backup dumps + `.env` + compose + storage.
-3. Record current image tags.
-4. Pull/load new images. **Merge** new compose/env keys into yours — do not blindly overwrite custom `UPLOAD_*`, `NO_PROXY`, worker counts, nginx.
-5. `compose down` then `up -d`. Watch api for migrations. `plugin-daemon` tag may stay if the notes say so.
-6. Reload nginx. Hit `/console/api/setup`, `/`, and `/socket.io/` (not 308).
-7. Log in, check providers still decrypt, plugin list, one dataset hit-test, one draft run.
+Heavily customized compose (custom vector image, `NO_PROXY`, loop/time caps, upload limits) must **not** be replaced with the official file. Merge new keys into yours.
+
+1. Read release notes (1.17: `EDITION` → `DEPLOYMENT_EDITION`; keep `COMMUNITY`. Leaving a leftover `EDITION=` in `.env` is fine).
+2. Backup: `pg_dump -Fc` **both** `dify` and `dify_plugin`, plus `.env`, compose, nginx, `volumes/app/storage`, `plugin_packages/`. Write a rollback note **before** you migrate.
+3. Record current image **tags and digests** (`docker inspect --format '{{.RepoDigests}}'`). Pull the new tag (or `name@sha256:…` through a mirror). Never un-pinned `:latest`.
+4. Merge new env keys. Do **not** turn on `WORKFLOW_LOG_CLEANUP_ENABLED` or `ENABLE_CONVERSATION_CLEANUP_TASK` unless the operator asked — 1.17 ships them off; flipping them deletes run history.
+5. Prefer rolling recreate, not a stack bounce: `compose up -d --no-deps --force-recreate <svc>`. Recreate **api first** (Alembic). Workers log `Running migrations` for 1–2 minutes — do not kill them. Then websocket / worker / beat / web / plugin_daemon / agent_*. `plugin-daemon` tag is **independent** of api/web; bump it only when the notes say the old daemon breaks model plugins.
+6. Never `compose down -v`. `compose down` (no `-v`) is a last resort; volumes stay, but you still lose in-flight runs.
+7. After recreating api/web: `nginx -s reload`. Do **not** reload nginx while `api_websocket` is down (`host not found in upstream` → whole console 502).
+8. Web 1.17 SSR needs `SERVER_CONSOLE_API_URL=http://api:5001` (container DNS). Leave `CONSOLE_API_URL` / `APP_API_URL` empty for the browser.
+9. Verify: `/console/api/setup`, `/` (unauth 307 to signin is OK), `/socket.io/` not 308, login, provider decrypt, plugin list + `local runtime ready`, one dataset hit-test, one **published** `/v1` run (draft-only does not prove the product).
 
 Cross major versions: do not skip (1.16 → last 1.x → 2.x). Plugins may not load.
 
 ## Rollback
 
-Stop new compose. Restore old compose + `.env`. If migrations ran: `dropdb`/`createdb` + `pg_restore` both databases, then `up -d` on the old images. Mixing new images with an old schema (or the reverse) breaks the console.
+If Alembic already ran, swapping images back is **not** enough.
+
+1. `compose stop` api/websocket/worker/beat/web/plugin_daemon/agent_* (not `down -v`).
+2. `dropdb` / `createdb` `dify` and `dify_plugin`, `pg_restore` both dumps.
+3. Restore the old compose + `.env`.
+4. `up -d --no-deps` those app containers on the **old** image ids.
+5. `nginx -s reload`.
+
+Mixing new images with an old schema (or the reverse) breaks the console.

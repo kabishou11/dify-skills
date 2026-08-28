@@ -44,11 +44,14 @@ Use this first when the user wants anything Dify-related. Pick one skill and fol
 9. Service API: same API key + same stable `user` for upload and run. Console uploads are invalid on `/v1`.
 10. DSL `version` comes from `GET /console/api/app-dsl-version` (1.17 = `0.7.0`). Never paste a 1.16 `0.1.5` export onto 1.17. Every canvas node needs top-level `type: "custom"` or the UI throws React #130.
 11. 1.17 env: api/worker/web/plugin_daemon/sandbox load `.env` via `env_file` (optional knobs in `docker/envs/*.env`). nginx/ssrf/weaviate/db still need listed `environment:` / `command:`. After recreating api/web, `nginx -s reload`. Knobs: [Dify compose and config](sand-workflow:dify-compose-and-config).
-12. 1.17 `POST /apps/{id}/workflows/draft` is `graph`+`features`+`hash` (+ `conversation_variables`). Top-level `environment_variables` → 400 `extra_forbidden`. Env edits: `environment_variable_patch`. Product backends run **published**, not draft.
+12. 1.17 `POST /apps/{id}/workflows/draft` is `graph`+`features`+`hash` (+ `conversation_variables`). Top-level `environment_variables` → 400 `extra_forbidden`. Env edits: `environment_variable_patch`.
+13. 1.17 Console **GET** also needs `X-CSRF-Token` (cookie alone → 401). Unauthenticated `/` → 307 `/signin` is normal. Agent Studio is `GET /agent`, not `/apps`.
+14. Ship **text-PDF** and **OCR** as two published apps. An if-else “short text → OCR loop” still puts OCR on the canvas. Product backends (`/v1`) run **published**, not draft.
+15. On 1.17.0, treat workspace Skill **file upload**, FastMCP OAuth, QA-segment answer PATCH, and Agent Studio **tool calling** as unstable until a patch release. Prefer classic workflow + `/v1` for anything a customer will demo.
 
 ## Order of work for a new Dify box
 1. Compose up, `GET /console/api/setup`
-2. Login (Base64 password + CSRF)
+2. Login (Base64 password + **cookie and CSRF on every later GET/POST**)
 3. Intranet model endpoint → default models
 4. Plugins the user named
 5. Knowledge base if they have files
