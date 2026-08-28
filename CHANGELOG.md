@@ -27,6 +27,7 @@ Working tree on `main`. **No GitHub Release yet.**
   - RAGFlow endpoint is `.../api/v1/dify` (Dify appends `/retrieval`); disable score_threshold because that path has no reranker.
   - DSL: `GET /app-dsl-version` (1.17 = `0.7.0`); every node needs top-level `type: custom`; Loop `break_conditions` need `id`+`varType` on loop vars; rerank needs four name fields; tools use OpenAPI `operationId`.
   - Intranet: `NO_PROXY` for SSRF, empty `CONSOLE_API_URL`/`APP_API_URL`/`CHECK_UPDATE_URL`, `MARKETPLACE_ENABLED=false`.
+  - 1.17 `POST .../workflows/draft` no longer accepts `environment_variables` (`extra_forbidden`). Use `environment_variable_patch`. Do not mix OCR tool loops into a text-PDF app via if-else; keep OCR as a separate published app. Multiple inbound edges to one LLM are a join stall. Product backends run the published graph, not draft.
 
 ### Notes
 - Community edition only. RBAC / billing / some RAG publish endpoints 403 by design.

@@ -27,7 +27,7 @@ Generate JSON (valid YAML) → validate → import **or** sync draft → publish
 1. Login (Base64 password + cookie + CSRF). Tokens last ~1h (`unauthorized` → login again).
 2. `GET /apps/{id}/workflows/draft` and keep `hash`.
 3. **Import** `POST /apps/imports` `{"mode":"yaml-content","yaml_content":"..."}` creates a **new** app every time.
-4. **Sync in place** (keep URL / API key): `POST /apps/{id}/workflows/draft` (not PATCH) with `graph`, `features`, `environment_variables`, `conversation_variables`, `hash`. Then `POST /apps/{id}/workflows/publish` `{}`.
+4. **Sync in place** (keep URL / API key): `POST /apps/{id}/workflows/draft` (not PATCH). 1.17 payload is `graph` + `features` + `hash` + optional `conversation_variables`. Do **not** send `environment_variables` — pydantic `extra_forbidden`. Env var edits use `environment_variable_patch: {environment_variables:[...], deleted_environment_variable_ids:[...]}`. Then `POST /apps/{id}/workflows/publish` `{}`.
 5. Debug without WebApp:
    - workflow: `POST /apps/{id}/workflows/draft/run`
    - chatflow: `POST /apps/{id}/advanced-chat/workflows/draft/run` with `query` + `conversation_id`
@@ -91,7 +91,7 @@ Selectors: `["nodeId","field"]`, `["sys","query"]`, `["env","VAR"]`, loop vars `
 
 **Variable-aggregator.** Merges branches without failing the unused side. Output commonly `output`.
 
-**Document-extractor.** No images — `default-value` empty text and send scans to an OCR tool (e.g. MinerU) instead.
+**Document-extractor.** Reads text PDFs / Office, not scans or photos. Empty extract → `error_strategy: default-value` with empty `text`. If the product also needs OCR, publish a **separate** app for the OCR loop — do not hang MinerU/tool nodes on the text-PDF graph behind an if-else (`length ≥ N` → extractor, else OCR). That still ships OCR on the canvas and callers will hit it. Text-PDF start `file` should use `allowed_file_types: ["document"]` only; including `image` invites scans the extractor cannot read.
 
 **Question-classifier.** Must have a `fail-branch` edge. `sourceHandle` = class id. Keep temperature low.
 
@@ -99,7 +99,11 @@ Selectors: `["nodeId","field"]`, `["sys","query"]`, `["env","VAR"]`, loop vars `
 
 **Assigner.** `version: "2"`, `operation: over-write`, `loop_id` set when inside a loop.
 
-Prefer **serial** over join-heavy graphs: multiple inbound edges can stall as a join. Put `retry_config` + `error_strategy` on LLM/tool/HTTP.
+Prefer **serial** over join-heavy graphs: multiple inbound edges can stall as a join. Typical bug: `document-extractor` edges **both** into the LLM and into a cleaner/gate that also feeds the same LLM — the engine waits for every inbound edge, including the unused OCR branch. One chain: extractor → clean → LLM. Put `retry_config` + `error_strategy` on LLM/tool/HTTP.
+
+**Published vs draft.** `/v1` and product backends run the **published** graph. Canvas-only surgery does not change the demo. After a graph fix: draft/run → publish.
+
+**Prompt wording.** Do not write “OCR后的正文” in a non-OCR workflow. It confuses operators into adding OCR nodes.
 
 ## Bindings when moving DSL between instances
 
