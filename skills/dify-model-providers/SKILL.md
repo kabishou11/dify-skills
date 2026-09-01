@@ -121,3 +121,14 @@ Same physical vLLM: two Dify rows. Fast path = `not_supported` + `/no_think`. Vi
 ## Do not
 
 Paste cloud keys or host URLs into skills/git. Keep `DEPLOYMENT_EDITION=COMMUNITY`. Do not add a second LLM “just to test”. Do not enable MTP. Do not treat custom tools as part of provider setup.
+
+### OpenAI-API-compatible per-model credentials (1.17, validated)
+
+`configurate_methods: customizable-model` — there is **no provider-level credential schema** (POST `.../credentials` → `does not have provider_credential_schema`). Flow for a hosted OpenAI-compatible embedding/rerank:
+
+1. `POST .../{provider}/models/credentials` `{"model": "<upstream-id>", "model_type": "text-embedding", "name": "...", "credentials": {"api_key": ..., "endpoint_url": "https://.../v1", "max_chunks": "16", "context_size": "4096", "encoding_format": "float"}}` (201; text-embedding needs `max_chunks`, llm needs `context_size` + `mode`).
+2. `GET .../{provider}/models/credentials?model=...&model_type=text-embedding` → take **`current_credential_id`** (not in the POST response).
+3. `POST .../{provider}/models` `{"model": "<upstream-id>", "model_type": "text-embedding", "config_from": "custom-model", "credential_id": "<uuid>"}`.
+4. Set workspace default: `POST /workspaces/current/default-model` — pass the **core model name** (`minimax-m3`), not the display label (`MiniMax-M3` → "Model does not exist").
+
+Provider-level key quirks: `add` requires `{"type": "api-key", "credentials": {...}}`; plugin yaml names the key (`aistudio_access_token`, not `access_token` — 400 "credential not found"). Existing rows survive on `providers` table even without a UI credential; enable predefined models via `POST .../{provider}/models` `{"config_from": "predefined-model"}`.

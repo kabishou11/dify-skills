@@ -270,3 +270,14 @@ Compose cannot register the Dify model row. After SSRF/NO_PROXY: [Dify model pro
 ## Do not
 
 Set `DEPLOYMENT_EDITION=ENTERPRISE`. Open egress with iptables. `compose down -v`. Blind-overwrite compose on upgrade. Put secrets in skills. Tune FineBI/Milvus-outside-Dify here. Reconfigure a live production clone “as if” it were empty. Publish frozen product apps.
+
+### Files URL split (files-download vs plugin-fetch) — proven on an isolated box
+
+`FILES_URL` serves **two audiences**: browser downloads of signed file URLs **and** (as a fallback) internal fetch. If a plugin needs files (`FILES_URL` must not be container-private for the browser):
+
+| Env | Value on a box reachable at LAN IP `10.10.10.3` | Why |
+|---|---|---|
+| `FILES_URL` | `http://10.10.10.3:8180` (browser-reachable origin) | signed `/files/tools/...` links are bound to it for `for_external=True`; a private value (`http://api:5001`) makes **every download fail with "cannot extract file"** |
+| `INTERNAL_FILES_URL` | `http://api:5001` | `generate_url(for_external=False)` prefers it; plugins/tool runtime may hand tools **origin-free** `/files/...` URIs |
+
+Symptom set: workflow outputs (docx/xlsx/images) download as `http://api:5001/files/...` from the browser → 404/unreachable. Fix is env split + recreate `api` (browser links) and `plugin_daemon` (plugin-fetch code paths); a local plugin patch that joins relative `/files/...` URIs to `INTERNAL_FILES_URL` should prefer INTERNAL first.

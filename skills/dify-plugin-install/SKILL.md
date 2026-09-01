@@ -55,3 +55,10 @@ Fat extras (`markitdown[all]`, GPU stacks) need every extra wheel or they fail a
 Prefer user-supplied URL: OpenAI-compatible, vLLM, Xinference, SQL, Redis, SSH, SMTP, HTTP Request **node** (builtin). Skip extra Google/Tavily/Exa unless asked. Official ids sometimes do not exist (`langgenius/vllm` → community vLLM plugin; `langgenius/time` → a datetime tool).
 
 `langgenius/mineru` tool `parse-file` with `server_type=local` does **not** poll. If the local MinerU `/file_parse` is async (`task_id` only), wrap it in a reusable workflow: try the plugin, then fall back to the site's OpenAPI `submit_parse` / `task_status` / `task_result` loop. List first (`GET .../plugin/list`); do not install extra OCR plugins unless asked.
+
+## Proven: local plugin patches (upgrade-safe note) + PaddleOCR
+
+- A plugin's source lives in `plugin_daemon/cwd/<org>/<name>-<ver>@<hash>/`. Small fixes can be applied **in place** (e.g. prefix relative `/files/...` URIs with `INTERNAL_FILES_URL`), then `compose up -d --no-deps --force-recreate plugin_daemon` and wait for `local runtime ready`. **Every plugin upgrade/reinstall wipes the patch** — re-apply after upgrades (documented in the workflow repo).
+- Path splits: first install `0.0.26-era` plugins still expose per-tenant credentials via `providers` rows; check `GET /workspaces/current/model-providers/{provider}/credentials` for the key name before `add`.
+- PaddleOCR (`langgenius/paddleocr 0.3.0`): `text_recognition` (PP-OCRv6) / `document_parsing` (PP-StructureV3) / `document_parsing_vl` (PaddleOCR-VL-1.6); hosted async jobs polled inside the plugin. **Do not send `outputFormats` to VL** (API 422 `OCR服务请求失败`) — leave it unset. `file` param passes Dify file objects; relative URIs must be patched or set `FILES_URL`/`INTERNAL_FILES_URL` properly.
+- Scan-document fallback pattern in DSL: `document-extractor` (default-value) → if-else text-layer length `< N` → OCR tool → clean (strip LaTeX `$\underline{...}$` and `<img>` tags) → merge with text layer → review pipeline. Verify with a real no-text-layer PDF.

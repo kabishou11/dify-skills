@@ -397,3 +397,16 @@ Private/internal URLs need `SSRF_PROXY_ALLOW_PRIVATE_IPS` (CIDR list) and matchi
 5. Publish → `api-enable` / `site-enable`. Start variables match caller `inputs`.
 6. Trigger graphs: no `start` node; webhook `GET .../triggers/webhook?node_id=` has a URL; schedule has `worker_beat` + poller flag; plugin node has `subscription_id`.
 7. `TRIGGER_URL` is the origin callers actually hit. `ENDPOINT_URL_TEMPLATE` is only for `/e/{hook_id}` plugin Endpoints.
+
+## DSL proven facts (0.7.0, validated by import + run on 1.17 Community)
+
+- Document-extractor node `type` is **`document-extractor`** (`doc-extractor` → "No class mapping found"). It errors on images (`.jpg`); add `error_strategy: default-value` so the empty text falls through to an OCR branch via if-else.
+- `if-else` comparison operators are the **unicode** forms: `≥`/`≤`/`≠` (not `>=`).
+- Tool node: `provider_id/provider_name/provider_type/tool_name/tool_label` + `tool_parameters` (required, may be `{}`) + `tool_configurations` + `tool_node_version: "2"`.
+- **Parameters are split by the schema `form`, not by value kind**: `form=llm` params go to `tool_parameters` (variable binding or `{type: mixed, value}` constant), `form=form` params go to `tool_configurations` (`{type: mixed|constant, value}`). Wrong placement = canvas shows the field empty and **publish fails "cannot be empty"** (e.g. md_exporter `force_text_value`/`enable_toc` are form=form; echarts `title/data/x_axis` are llm). Source of truth: plugin tool yaml `parameters[].form` — generate a `tool-param-forms.json` map so builders never guess.
+- `error_strategy` enum is only `fail-branch` / `default-value` (`continue-on-error` is rejected by pydantic).
+- `workflows/draft/run` returns **SSE** (`data:` / `event:` lines); parse the `workflow_finished` event — a plain JSON read fails even though the run succeeded.
+- File params serialize as origin-free `/files/<id>/file-preview?...` objects; tool nodes receive them as-is (`dify_model_identity: __dify__file__`), so consumers must join a base URL themselves (see compose-and-config Files URL split).
+- Code nodes cannot take File params; `list` outputs (e.g. KB `result`) must be returned as **JSON strings** — `type: object` with a list value fails "Output result is not an object".
+- Never chain `.update()` on a node-builder call inside a list literal (`tool_node(...).update({...})` returns None and silently corrupts graph validation).
+- Model JSON outputs are not trustworthy: LLMs emit unescaped quotes inside strings and duplicated bare keys (`"risk_description","risk_description":`). Prefer a **code node** for parsing with chained repair (normalize → repair duplicate-key commas → escape in-string quotes) over the `json_process` tool, and instruct prompts to use full-width quotes in Chinese content.
