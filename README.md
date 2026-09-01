@@ -38,12 +38,13 @@ English: executable [Agent Skills](https://agentskills.io) for operating self-ho
 | 外挂知识库 404 / 召回全被滤掉 | RAGFlow 端点要带 `/dify`；那条路径没有 rerank，阈值要关 | [dify-knowledge-bases](skills/dify-knowledge-bases/SKILL.md) |
 | 插件 uv `exit status 1` | 容器没外网，要用 host `.difypkg` + 本地 PEP 503 | [dify-plugin-install](skills/dify-plugin-install/SKILL.md) |
 | 工具 `Unknown error` | `tool_name` 必须是 OpenAPI `operationId`，不是显示名 | [dify-agents-and-tools](skills/dify-agents-and-tools/SKILL.md) |
-| 离线搬家后插件/密钥全废 | 漏了 `dify_plugin` 库、`SECRET_KEY` 或 `plugin_packages/` | [dify-backup-and-upgrade](skills/dify-backup-and-upgrade/SKILL.md) |
+| 每个图都拖 MinerU / OCR 空结果 | 应做成可复用 Workflow 再发布为工具；插件不轮询异步 `/file_parse` | [dify-agents-and-tools](skills/dify-agents-and-tools/SKILL.md) |
+| Webhook 404 / 定时不跑 | 公网路径是 `/triggers/webhook/{id}`；schedule 靠 worker_beat poller | [dify-apps-and-workflows](skills/dify-apps-and-workflows/SKILL.md) |
+| 文件 start 上加了定时节点 publish 失败 | `start` 与 Trigger 不能同图；解析和每日扫描拆两个应用 | [dify-apps-and-workflows](skills/dify-apps-and-workflows/SKILL.md) |
 | `/rbac` `/billing` 403 | 社区版功能开关，不是 CSRF 坏了 | [dify-development](skills/dify-development/SKILL.md) |
 | 内网 HTTP / RAGFlow 502 | Squid SSRF，把内网主机加进 `NO_PROXY`；`SSRF_PROXY_ALLOW_PRIVATE_IPS` 是 CIDR 不是 `true` | [dify-intranet](skills/dify-intranet/SKILL.md) |
 | 改了 `.env` 画布 Loop 上限不变 | 1.17 要 recreate **web**；运行时限额在 api `WORKFLOW_MAX_*` | [dify-compose-and-config](skills/dify-compose-and-config/SKILL.md) |
 | 邀请邮件发不出去 | Dify 自己的 `MAIL_TYPE=smtp`，不是 email 插件 | [dify-compose-and-config](skills/dify-compose-and-config/SKILL.md) |
-| Webhook 404 / 定时不跑 | 公网路径是 `/triggers/webhook/{id}`；schedule 靠 worker_beat poller | [dify-apps-and-workflows](skills/dify-apps-and-workflows/SKILL.md) |
 | 代码节点 15s 被杀 | `SANDBOX_WORKER_TIMEOUT`，不是「sleep ≤ 2s」 | [dify-apps-and-workflows](skills/dify-apps-and-workflows/SKILL.md) |
 | 知识库 hit-test 空 | 外挂要 `/dify`；rerank 四个字段；关 score_threshold | [dify-knowledge-bases](skills/dify-knowledge-bases/SKILL.md) |
 

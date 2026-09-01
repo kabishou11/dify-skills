@@ -75,7 +75,7 @@ Selectors: `["nodeId","field"]`, `["sys","query"]`, `["env","VAR"]`, loop vars `
 
 **LLM.** Must include a **user** message (`No user query found`). `vision.enabled: true` requires `configs.variable_selector` (e.g. `["sys","files"]`) + `detail`, else publish "视觉变量不能为空". Thinking models: `max_tokens` ≥ 16384 or the thought eats the budget and `text` is empty. Fast path: `/no_think` at the end of system. Strip `<think>...</think>` with a code node if the provider surfaces it. `retry_config` + `error_strategy: default-value` are default. Do not enable node `structured_output` on models that lack it — JSON schema in the prompt + code parse.
 
-**Code.** Input field is **`value_selector`**, not `variable_selector`. There is **no** 2s `sleep` cap in 1.17 source — kill time is `SANDBOX_WORKER_TIMEOUT` (default 15s). Stdlib + optional `/dependencies`. Full recipe: [Code node and sandbox](#code-node-and-sandbox). Nested generators: build newlines with `chr(10)` to avoid escape hell. `compile(code, id, "exec")` before import.
+**Code.** Input field is **`value_selector`**, not `variable_selector`. There is **no** 2s `sleep` cap in 1.17 source — kill time is `SANDBOX_WORKER_TIMEOUT` (default 15s). Stdlib + optional `/dependencies`. Full recipe: [Code node and sandbox](#code-node-and-sandbox). Nested generators: build newlines with `chr(10)` to avoid escape hell. `compile(code, id, "exec")` before import. **Do not pass File objects into code** — sandbox raises `Type is not JSON serializable: File`. Optional uploads: if-else `not empty` (`varType: file`) then a **tool** node; never `value_selector` a file into code.
 
 **If-else.** Numeric operators are Unicode `≥` `≤` `≠`, not `>=`. Cases use `conditions[]` + `varType`.
 
@@ -91,7 +91,7 @@ Selectors: `["nodeId","field"]`, `["sys","query"]`, `["env","VAR"]`, loop vars `
 
 **Variable-aggregator.** Merges branches without failing the unused side. Output commonly `output`.
 
-**Document-extractor.** Reads text PDFs / Office, not scans or photos. Empty extract → `error_strategy: default-value` with empty `text`. If the product also needs OCR, publish a **separate** app for the OCR loop — do not hang MinerU/tool nodes on the text-PDF graph behind an if-else (`length ≥ N` → extractor, else OCR). That still ships OCR on the canvas and callers will hit it. Text-PDF start `file` should use `allowed_file_types: ["document"]` only; including `image` invites scans the extractor cannot read.
+**Document-extractor.** Reads text PDFs / Office, not scans or photos. Empty extract → `error_strategy: default-value` with empty `text`. If **several** workflows need OCR, publish **one** reusable OCR workflow as a tool (`provider_type: workflow`) instead of dropping `langgenius/mineru` / HTTP-to-MinerU on every canvas. Do **not** hang MinerU nodes on a text-PDF graph behind an if-else either — that still ships OCR on that canvas. Text-PDF start `file` should use `allowed_file_types: ["document"]` only; including `image` invites scans the extractor cannot read.
 
 **Question-classifier.** Must have a `fail-branch` edge. `sourceHandle` = class id. Keep temperature low.
 
@@ -124,6 +124,8 @@ Site: `POST /apps/{id}/site-enable`. MCP: `POST /apps/{id}/server`.
 ## Triggers (workflow only)
 
 `data.type` is one of `trigger-schedule` | `trigger-webhook` | `trigger-plugin`. They are **start** nodes. Publish rejects a graph that also has a `start` node (`Start node and trigger nodes cannot coexist in the same workflow`). Chatflow handlers no-op — do not put triggers on `advanced-chat`.
+
+There is **no delay queue**. “Fire when a date arrives” = persist structured rows (dataset / JSON) + a **daily** `trigger-schedule` app. File-upload ingest stays on a `start` graph; the cron graph is a second app. Do not install a marketplace “cron plugin” unless listing shows one — 1.17 Schedule is a **canvas node** plus `worker_beat`.
 
 Caps from source: **<=5** webhook nodes and **<=5** plugin-trigger nodes per workflow. Schedule sync takes the **first** `trigger-schedule` node only (one `workflow_schedule_plans` row per app).
 
@@ -202,7 +204,7 @@ Cron mode: exactly **5** fields, or a predefined `@hourly` / `@daily` / `@weekly
 4. Due rows: `next_run_at <= now`, matching `app_triggers` `trigger-schedule` **enabled**. Batch `WORKFLOW_SCHEDULE_POLLER_BATCH_SIZE` (100). Circuit breaker `WORKFLOW_SCHEDULE_MAX_DISPATCH_PER_TICK` (`0` = unlimited).
 5. Recreate **worker_beat** after toggling the flag; recreate **worker** if you overrode `CELERY_QUEUES` and dropped `schedule_*`.
 
-Schedule debug (canvas): `POST /apps/{id}/workflows/draft/nodes/{node_id}/trigger/run` runs immediately (no wait). Full-graph debug: `POST /apps/{id}/workflows/draft/trigger/run` `{"node_id":"..."}` — if nothing is due yet you get `{"status":"waiting","retry_in":2000}`. `POST .../draft/trigger/run-all` `{"node_ids":[...]}`.
+Schedule debug (canvas): `POST /apps/{id}/workflows/draft/nodes/{node_id}/trigger/run` may error or no-op. Full-graph debug: `POST /apps/{id}/workflows/draft/trigger/run` `{"node_id":"..."}` — if nothing is due yet you get `{"status":"waiting","retry_in":2000}` (**normal**). To simulate now: `POST .../workflows/draft/run` with `inputs: {}`, or published `POST /v1/workflows/run`. `POST .../draft/trigger/run-all` `{"node_ids":[...]}`.
 
 Published run inputs are `{}`. Runs as the tenant **owner** (fallback admin).
 

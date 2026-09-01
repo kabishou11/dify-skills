@@ -17,8 +17,9 @@ Use this first when the user wants anything Dify-related. Pick one skill and fol
 | Agent Studio debug chat, logs, sandbox files | Dify workspace extras |
 | Install / repair / list plugins, Marketplace empty, uv failed | Dify plugin install |
 | Create/edit chat, chatflow, workflow, DSL, publish canvas | Dify apps and workflows |
-| Code-first DSL, Loop/Iteration, React #130, draft `hash`, `app-dsl-version` | Dify apps and workflows |
 | Workflow schedule (cron), webhook / plugin trigger, enable/disable, `TRIGGER_URL` | Dify apps and workflows |
+| Reusable OCR workflow-as-tool, MinerU plugin vs async `/file_parse` | Dify agents and tools |
+| Code-first DSL, Loop/Iteration, React #130, draft `hash`, `app-dsl-version` | Dify apps and workflows |
 | Code node sandbox (`value_selector`, stdlib, `/dependencies`, timeouts) | Dify apps and workflows |
 | Knowledge base, upload docs, retrieval, RAGFlow external | Dify knowledge bases |
 | Dataset hit-test / retrieve | Dify knowledge bases |
@@ -46,8 +47,10 @@ Use this first when the user wants anything Dify-related. Pick one skill and fol
 11. 1.17 env: api/worker/web/plugin_daemon/sandbox load `.env` via `env_file` (optional knobs in `docker/envs/*.env`). nginx/ssrf/weaviate/db still need listed `environment:` / `command:`. After recreating api/web, `nginx -s reload`. Knobs: [Dify compose and config](sand-workflow:dify-compose-and-config).
 12. 1.17 `POST /apps/{id}/workflows/draft` is `graph`+`features`+`hash` (+ `conversation_variables`). Top-level `environment_variables` → 400 `extra_forbidden`. Env edits: `environment_variable_patch`.
 13. 1.17 Console **GET** also needs `X-CSRF-Token` (cookie alone → 401). Unauthenticated `/` → 307 `/signin` is normal. Agent Studio is `GET /agent`, not `/apps`.
-14. Ship **text-PDF** and **OCR** as two published apps. An if-else “short text → OCR loop” still puts OCR on the canvas. Product backends (`/v1`) run **published**, not draft.
+14. Ship **text-PDF** and **OCR** as separate apps. Prefer **one reusable OCR workflow published as a tool** over dropping MinerU on every canvas. An if-else “short text → OCR loop” still puts OCR on that canvas. Product backends (`/v1`) run **published**, not draft.
 15. On 1.17.0, treat workspace Skill **file upload**, FastMCP OAuth, QA-segment answer PATCH, and Agent Studio **tool calling** as unstable until a patch release. Prefer classic workflow + `/v1` for anything a customer will demo.
+16. Schedule Trigger cannot share a graph with `start`. File ingest and daily cron are two apps. Cron must be published. There is no one-shot delay queue.
+17. Host iron (when `/data/AGENTS.md` / `docs/dify` exist): one LLM on :8001; DSL via `json.dump` (1.17 = `0.7.0`); new apps under `project/work/<project>/v1/`; do not publish the frozen contract-review / kbqa product apps; do not `compose down -v`; Python wheels from the local index, never `pip install torch` from PyPI.
 
 ## Order of work for a new Dify box
 1. Compose up, `GET /console/api/setup`
