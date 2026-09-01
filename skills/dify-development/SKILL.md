@@ -3,8 +3,11 @@ name: Dify development
 description: >-
   Use this first for any Dify work — routes to console, plugins, apps, RAG,
   models, agents, logs, sandbox, hit-test, workspace extras, API catalog, compose/env, intranet, debug, backup.
+  Use this to tune a new isomorphic Dify 1.17 box: platform compose/.env/nginx/workers/timeouts (not custom tools).
 ---
 # Dify development (router)
+
+## Instructions
 
 Use this first when the user wants anything Dify-related. Pick one skill and follow it; do not reinvent HTTP.
 
@@ -30,8 +33,9 @@ Use this first when the user wants anything Dify-related. Pick one skill and fol
 | App `404`, CSRF, plugin red, "同步数据中", nginx 502 after recreate | Dify troubleshooting |
 | Call `/v1/chat-messages` or `/v1/workflows/run`, API keys, `Invalid upload file` | Dify service API |
 | Backup, upgrade, air-gap pack, both Postgres DBs, `.env` drift | Dify backup and upgrade |
-| Workers, timeouts, uploads, workflow/loop caps, sandbox/code execution, trigger URLs (`TRIGGER_URL`, `ENDPOINT_URL_TEMPLATE`, `WEBHOOK_REQUEST_BODY_MAX_SIZE`, `SANDBOX_WORKER_TIMEOUT`, `ENABLE_WORKFLOW_SCHEDULE_POLLER_TASK`), nginx, postgres, mail, `.env` injection | Dify compose and config |
+| Workers, timeouts, uploads, workflow/loop caps, sandbox, nginx, postgres, mail, json-file logs, `.env` injection, **new-box platform tune** | Dify compose and config |
 | Private network, no SaaS, SSRF, `NO_PROXY`, internal vLLM/SQL | Dify intranet |
+| Custom OpenAPI / workflow-as-tool / Agent tools (not platform tune) | Dify agents and tools |
 
 ## Hard rules (every Dify task)
 1. Prefer Console API over the browser. Browser only for first `/install`, OAuth, captcha.
@@ -44,22 +48,46 @@ Use this first when the user wants anything Dify-related. Pick one skill and fol
 8. Community RBAC / billing / some RAG publish 403s are feature gates, not CSRF.
 9. Service API: same API key + same stable `user` for upload and run. Console uploads are invalid on `/v1`.
 10. DSL `version` comes from `GET /console/api/app-dsl-version` (1.17 = `0.7.0`). Never paste a 1.16 `0.1.5` export onto 1.17. Every canvas node needs top-level `type: "custom"` or the UI throws React #130.
-11. 1.17 env: api/worker/web/plugin_daemon/sandbox load `.env` via `env_file` (optional knobs in `docker/envs/*.env`). nginx/ssrf/weaviate/db still need listed `environment:` / `command:`. After recreating api/web, `nginx -s reload`. Knobs: [Dify compose and config](sand-workflow:dify-compose-and-config).
+11. 1.17 official compose: api/worker/web load `.env` via `env_file`. Customized clones often **list** keys in `environment:` (then `.env` alone is ignored) or bind-mount nginx/squid. Trust `printenv`. After recreating api/web, `nginx -s reload`. Knobs: [Dify compose and config](sand-workflow:dify-compose-and-config).
 12. 1.17 `POST /apps/{id}/workflows/draft` is `graph`+`features`+`hash` (+ `conversation_variables`). Top-level `environment_variables` → 400 `extra_forbidden`. Env edits: `environment_variable_patch`.
 13. 1.17 Console **GET** also needs `X-CSRF-Token` (cookie alone → 401). Unauthenticated `/` → 307 `/signin` is normal. Agent Studio is `GET /agent`, not `/apps`.
 14. Ship **text-PDF** and **OCR** as separate apps. Prefer **one reusable OCR workflow published as a tool** over dropping MinerU on every canvas. An if-else “short text → OCR loop” still puts OCR on that canvas. Product backends (`/v1`) run **published**, not draft.
 15. On 1.17.0, treat workspace Skill **file upload**, FastMCP OAuth, QA-segment answer PATCH, and Agent Studio **tool calling** as unstable until a patch release. Prefer classic workflow + `/v1` for anything a customer will demo.
 16. Schedule Trigger cannot share a graph with `start`. File ingest and daily cron are two apps. Cron must be published. There is no one-shot delay queue.
-17. Host iron (when `/data/AGENTS.md` / `docs/dify` exist): one LLM on :8001; DSL via `json.dump` (1.17 = `0.7.0`); new apps under `project/work/<project>/v1/`; do not publish the frozen contract-review / kbqa product apps; do not `compose down -v`; Python wheels from the local index, never `pip install torch` from PyPI.
+17. Host iron (when host ops docs exist): **one** LLM on :8001 (Dense 27B TP=4, ctx 262144, `--disable-custom-all-reduce`; the old “TP=1 / ctx 16384” rule is obsolete). No second LLM. No MTP. Do not `compose down -v`. Do not `pull :latest` without a digest. Local wheels only; never `pip install torch` from PyPI. Do not publish frozen contract-review / kbqa product apps.
+
+## 新环境：Dify 平台基础配置
+
+This is **Dify 1.17 Community platform** tune (compose / `.env` / nginx / workers / timeouts / uploads / SSRF / DB). It is **not** custom OpenAPI tools, PageIndex, MinerU wrappers, or importing business DSL — those belong in other docs if the operator asks later.
+
+Order:
+
+1. Read **runtime** on a healthy clone (`docker exec … printenv`, `nginx -T`, db `command:`) — not the `.env` file alone.
+2. Edit the **new** box. Tables and recreate vs reload: [Dify compose and config](sand-workflow:dify-compose-and-config).
+3. Intranet URLs / Squid / `NO_PROXY` so api can reach `:8001` without opening the public net: [Dify intranet](sand-workflow:dify-intranet).
+4. Register OpenAI-compatible LLM + embedding + rerank in Console (platform providers only): [Dify model providers](sand-workflow:dify-model-providers). `curl` `:8001/v1/models` first.
+5. Recreate only the services that need it. Verify. Failures: [Dify troubleshooting](sand-workflow:dify-troubleshooting).
+
+**Done:** console login; Dify can chat via the local LLM; large PDF does not 413; long workflows survive ≥7200s nginx/gunicorn/workflow caps; beat/schedule queues exist if you need cron; SSRF allows host models, not `*`; still one LLM, no MTP, no unpinned `:latest`.
 
 ## Order of work for a new Dify box
 1. Compose up, `GET /console/api/setup`
 2. Login (Base64 password + **cookie and CSRF on every later GET/POST**)
-3. Intranet model endpoint → default models
-4. Plugins the user named
-5. Knowledge base if they have files
-6. App (workflow / chatflow / agent-chat) **or** Agent Studio roster
-7. Publish + API key (or MCP server)
+3. **Platform tune** (section above) — compose/intranet/models
+4. Plugins the user named (offline `.difypkg`; do not install a second OCR stack unless asked)
+5. Knowledge base / apps only if they asked — not part of platform tune
 
 ## If two skills overlap
-Operate vs debug → troubleshooting when there is an error, console API when you are only fetching/changing config. Service API vs console → `/v1` is for *published* apps and external callers; `/console/api` is for you as admin. Catalog vs a domain skill → catalog picks the prefix; the domain skill has the payload. Compose knobs vs a crash → compose-and-config to change a value, troubleshooting when it is already broken. Import vs edit → `POST /apps/imports` always creates a **new** app; in-place canvas edits are `POST .../workflows/draft` plus `hash`.
+Operate vs debug → troubleshooting when there is an error, console API when you are only fetching/changing config. Service API vs console → `/v1` is for *published* apps and external callers; `/console/api` is for you as admin. Catalog vs a domain skill → catalog picks the prefix; the domain skill has the payload. Compose knobs vs a crash → compose-and-config to change a value, troubleshooting when it is already broken. Import vs edit → `POST /apps/imports` always creates a **new** app; in-place canvas edits are `POST .../workflows/draft` plus `hash`. Platform tune vs tools → compose/intranet/model-providers; do not start with agents-and-tools.
+
+## Examples
+
+Operator: “new isomorphic box, tune Dify to best” → section **新环境：Dify 平台基础配置**, then compose-and-config tables. Do not import business graphs.
+
+## Performance Notes
+
+One LLM :8001. Cap Celery at 16. Workflow/nginx/gunicorn ≥ 7200s for long OCR/contract-class runs. json-file `50m×3` in compose.
+
+## Troubleshooting
+
+413 / timeout / CSRF / “同步数据中” → [Dify troubleshooting](sand-workflow:dify-troubleshooting). Compose drift (`.env` vs listed env vs bind-mount) → compose-and-config.

@@ -5,6 +5,8 @@ description: >-
 ---
 # Dify troubleshooting
 
+## Instructions
+
 Use this when Dify is up but something fails. Changing workers/timeouts/.env: [Dify compose and config](sand-workflow:dify-compose-and-config). Intranet/SSRF: [Dify intranet](sand-workflow:dify-intranet). Plugin uv: [Dify plugin install](sand-workflow:dify-plugin-install). Canvas/DSL: [Dify apps and workflows](sand-workflow:dify-apps-and-workflows). Prefixes: [Dify API catalog](sand-workflow:dify-api-catalog).
 
 ## Decide where it broke
@@ -53,6 +55,14 @@ Use this when Dify is up but something fails. Changing workers/timeouts/.env: [D
 | `/workflow-app-logs` 400 on a chat app | route is `mode=workflow` | use `/chat-conversations` |
 | Agent debug `blocking` 400 | Studio is SSE-only | `response_mode=streaming` |
 | Hit-test empty `records` | embedding down / threshold / still indexing | disable `score_threshold`; wait for index; RAGFlow use 0 |
+| Long workflow dies ~6 min | `GUNICORN_TIMEOUT` still 360 | 7200; compose `environment:` may ignore `.env` |
+| Long workflow dies ~15s in code | `SANDBOX_WORKER_TIMEOUT` | raise sandbox; keep `CODE_EXECUTION_READ_TIMEOUT` larger |
+| Celery pegs all CPUs | `CELERY_AUTO_SCALE` without `CELERY_MAX_WORKERS` in worker env | cap 16; confirm `--autoscale=16,4` |
+| Schedule never fires | beat down or worker `-Q` dropped `schedule_*` | recreate beat+worker |
+| 413 PDF but Dify limit is 20MB | nginx `client_max_body_size` still 100M / bind-mount not edited | `nginx -T`; 500M if you need 400MB video |
+| `.env` 200M nginx, live 100M | listed compose env is not what nginx serves | bind-mount `nginx.conf` vs official templates |
+| New box canvas sync hang | `NEXT_PUBLIC_SOCKET_URL` still the old host | recreate **web** |
+| LLM 502 from a node | host not on `NO_PROXY` / Squid 5s | intranet skill |
 
 ## Compose health
 ```bash
@@ -67,7 +77,7 @@ curl -s -o /dev/null -w "%{http_code}" -H "Upgrade: websocket" -H "Connection: U
 Never `compose down -v`. After `--force-recreate`, reload nginx **only if** `api_websocket` is already up.
 
 ## Env injection
-1.17: api / worker / worker_beat / web / plugin_daemon / sandbox have `env_file` including `./.env`, so keys in `.env` **do** inject. nginx / ssrf_proxy / weaviate / redis / db still only see listed `environment:` or `command:` interpolation. Copy `docker/envs/**/*.env.example` → `*.env` or advanced knobs never appear. `POSTGRES_*` and `CELERY_AUTO_SCALE` **are** interpolated in 1.17. Verify with `docker exec <svc> printenv KEY`. Procedure: [Dify compose and config](sand-workflow:dify-compose-and-config).
+Official 1.17: api / worker / beat / web / plugin_daemon / sandbox have `env_file` including `./.env`. **Custom clones** often list the same keys in compose `environment:` (listed value wins) or bind-mount nginx/squid (then `NGINX_*` / `SSRF_*` never reach the process). Always `docker exec <svc> printenv KEY`. Procedure: [Dify compose and config](sand-workflow:dify-compose-and-config).
 
 ## Plugins / models / RAG
 Installed ≠ credentials saved. `high_quality` needs embedding. External KB: [Dify knowledge bases](sand-workflow:dify-knowledge-bases). MiniMax is a cloud API — on an air-gap, remove it as the workspace default.
@@ -75,5 +85,24 @@ Installed ≠ credentials saved. `high_quality` needs embedding. External KB: [D
 ## Nested Docker
 `whiteout … operation not permitted` → `fuse-overlayfs`. ICC broken → `bridge-nf-call-iptables`.
 
+## Examples
+
+New-box smoke (read-only on a live clone; apply only on the new compose dir):
+
+```bash
+curl -sS http://127.0.0.1/console/api/setup
+curl -sS http://127.0.0.1:8001/v1/models
+docker exec docker-api-1 printenv GUNICORN_TIMEOUT WORKFLOW_MAX_EXECUTION_TIME NO_PROXY
+docker exec docker-nginx-1 nginx -T | grep -E 'client_max_body_size|proxy_read_timeout'
+```
+
+## Performance Notes
+
+Cap json-file in compose (`50m` × 3). Old containers may have unlimited logs until recreated; truncate `*-json.log`, do not restart dockerd to apply daemon log-opts.
+
+## Troubleshooting
+
+The table above is the symptom index. Compose knobs: [Dify compose and config](sand-workflow:dify-compose-and-config).
+
 ## Do not
-Set `DEPLOYMENT_EDITION=ENTERPRISE`. Open container egress with iptables to "fix" marketplace. Delete `volumes/` to fix one plugin. Put host passwords or `SECRET_KEY` into skills/git.
+Set `DEPLOYMENT_EDITION=ENTERPRISE`. Open container egress with iptables to "fix" marketplace. Delete `volumes/` to fix one plugin. Put host passwords or `SECRET_KEY` into skills/git. Do not retune a live production stack as if it were empty.

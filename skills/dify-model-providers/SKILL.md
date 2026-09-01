@@ -5,6 +5,8 @@ description: >-
 ---
 # Dify model providers
 
+## Instructions
+
 Use this when adding or switching LLM / embedding / rerank / ASR providers on self-hosted Dify. Prefix `/console/api`. Cookie + CSRF: [Dify console API](sand-workflow:dify-console-api). Intranet URLs: [Dify intranet](sand-workflow:dify-intranet).
 
 ## Load order
@@ -15,6 +17,23 @@ Use this when adding or switching LLM / embedding / rerank / ASR providers on se
 4. Set workspace defaults.
 
 `provider` path is the plugin id, e.g. `langgenius/openai_api_compatible/openai_api_compatible`. `model_type`: `llm` | `text-embedding` | `rerank` | `speech2text` | `tts` | `moderation`.
+
+## New-box platform wiring (not tools)
+
+This skill registers **Dify model providers**. It does not import OpenAPI tools.
+
+1. `curl -sS http://127.0.0.1:8001/v1/models` (or the new box equivalent). Fail → fix the GPU process, not Dify.
+2. **One** LLM on **:8001**. Embedding :8000, rerank :8002. Do not start a second LLM. Do not enable MTP. Multi-GPU: `--disable-custom-all-reduce`. Dense 27B is **TP=4**, `max-model-len` 262144 — ignore the obsolete “must TP=1 / ctx 16384” rule.
+3. From **inside** the api container the URL must resolve (host LAN IP or host-gateway). Put that host on `NO_PROXY` first ([Dify intranet](sand-workflow:dify-intranet)).
+4. Install `langgenius/openai_api_compatible` (and optional `yangyaofei/vllm`) until `local runtime ready`.
+5. POST credentials + enable models + workspace default (below).
+6. Thinking completions need `max_tokens` ≥ 16384 **and** the timeout stack in [Dify compose and config](sand-workflow:dify-compose-and-config) (gunicorn/nginx/workflow ≥ 7200 for long graphs).
+
+| Role | Clone-like endpoint (changes) | New box |
+|---|---|---|
+| LLM | `http://127.0.0.1:8001/v1` served name e.g. `Qwen3.8-27B` | same ports; Dify **display** `name` may differ |
+| Embedding | `:8000/v1` | keep; do not share 8001 |
+| Rerank | `:8002/v1` (`/v1/rerank`, not chat) | keep |
 
 ## OpenAI-compatible / vLLM / Xinference
 
@@ -73,7 +92,22 @@ Credentials encrypt with `SECRET_KEY`. Changing the key → `credentials is not 
 - Thinking: `max_tokens` ≥ 16384 on the `supported` row; on the `not_supported` row always add `/no_think`. Strip `<think>` in a code node if the downstream parser chokes.
 - Vision: `vision.enabled` requires `configs.variable_selector` pointing at the file var.
 
-## Failure patterns
+## Examples
+
+Validate then save:
+
+```http
+POST /workspaces/current/model-providers/langgenius/openai_api_compatible/openai_api_compatible/credentials/validate
+{"credentials":{"api_key":"dummy","endpoint_url":"http://127.0.0.1:8001/v1"}}
+```
+
+Use the host URL that **api** can open (often the LAN IP, not `localhost` from inside Docker unless you added `extra_hosts`).
+
+## Performance Notes
+
+Same physical vLLM: two Dify rows. Fast path = `not_supported` + `/no_think`. Visible reasoning = `supported` + `max_tokens` ≥ 16384. Display `name` is what DSL stores.
+
+## Troubleshooting
 
 | Error | Cause | Fix |
 |---|---|---|
@@ -86,4 +120,4 @@ Credentials encrypt with `SECRET_KEY`. Changing the key → `credentials is not 
 
 ## Do not
 
-Paste cloud keys or host URLs into skills/git. Keep `DEPLOYMENT_EDITION=COMMUNITY`.
+Paste cloud keys or host URLs into skills/git. Keep `DEPLOYMENT_EDITION=COMMUNITY`. Do not add a second LLM “just to test”. Do not enable MTP. Do not treat custom tools as part of provider setup.

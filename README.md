@@ -29,7 +29,11 @@ English: executable [Agent Skills](https://agentskills.io) for operating self-ho
 | `GET /apps` 少了一个 Agent | Agent Studio 在 `GET /agent` | [dify-console-api](skills/dify-console-api/SKILL.md) |
 | 改了画布演示还是旧图 | `/v1` 跑的是 **published** | [dify-apps-and-workflows](skills/dify-apps-and-workflows/SKILL.md) |
 | 文本 PDF 应用画布上还有 OCR | 文本版和 OCR 版必须拆成两个应用 | [dify-apps-and-workflows](skills/dify-apps-and-workflows/SKILL.md) |
-| 改了 `.env` 容器里看不到 | 1.17 api/worker/web 会读 `.env`；nginx/ssrf/db 仍要 listed keys；高级项在 `docker/envs/` | [dify-compose-and-config](skills/dify-compose-and-config/SKILL.md) |
+| 改了 `.env` 容器里看不到 | 运行态才是真相：官方 1.17 走 `env_file`；定制 compose 常 **列出** `environment:` 或 bind-mount nginx/squid | [dify-compose-and-config](skills/dify-compose-and-config/SKILL.md) |
+| 新盒子要「调到最佳」 | 平台 compose/超时/上传/SSRF/worker，**不是**导入自建工具 | [dify-development](skills/dify-development/SKILL.md) 一节「新环境：Dify 平台基础配置」 |
+| 长工作流 6 分钟被杀 | `GUNICORN_TIMEOUT` 仍 360，或 nginx 3600s | [dify-compose-and-config](skills/dify-compose-and-config/SKILL.md) |
+| Celery 把 CPU 打满、模型变慢 | `CELERY_AUTO_SCALE` 未注入 `MAX_WORKERS`，扩到 nproc | [dify-compose-and-config](skills/dify-compose-and-config/SKILL.md) |
+| 上传 PDF 413 | nginx `client_max_body_size` 小于 Dify `UPLOAD_*` | [dify-compose-and-config](skills/dify-compose-and-config/SKILL.md) |
 | 重建 api 后 nginx `502` | 上游 IP 缓存，要 `nginx -s reload` | [dify-troubleshooting](skills/dify-troubleshooting/SKILL.md) |
 | 画布一直「同步数据中」 | 1.16+ 走 Socket.IO `/socket.io/`，`NEXT_PUBLIC_SOCKET_URL` 必须浏览器能访问 | [dify-troubleshooting](skills/dify-troubleshooting/SKILL.md) |
 | `POST .../workflows/draft` 400 `environment_variables extra_forbidden` | 1.17 图同步不再收顶层 env 列表 | [dify-apps-and-workflows](skills/dify-apps-and-workflows/SKILL.md) |
@@ -244,6 +248,7 @@ $dify-troubleshooting
 - 「RAGFlow 接到 Dify 召回全是 0」→ knowledge-bases
 - 「离线把这套 Dify 搬到另一台机器」→ backup-and-upgrade
 - 「把 Loop 上限和 workflow 步数都放开」→ compose-and-config
+- 「新环境把 Dify 基础配置调到最佳」→ development 平台一节 + compose-and-config（不是导入工具）
 - 「给 workflow 加 webhook / 定时」→ apps-and-workflows
 - 「把这次运行的节点日志拉下来」→ workspace-extras
 
@@ -286,7 +291,7 @@ $dify-troubleshooting
 | [dify-intranet](skills/dify-intranet/SKILL.md) | 内网 / 断网 | `NO_PROXY`、空 `CONSOLE_API_URL`、关掉 Marketplace 探测 | `/dify-intranet 这台机器没有外网` |
 | [dify-troubleshooting](skills/dify-troubleshooting/SKILL.md) | 已经坏了 | 按症状分层：CSRF、uv、413、SSRF、Socket.IO、compose vs .env | `/dify-troubleshooting 插件图标 503` |
 | [dify-backup-and-upgrade](skills/dify-backup-and-upgrade/SKILL.md) | 备份、升级、搬家、重启后拉起 | 两套 Postgres、同一把 `SECRET_KEY`、插件包、合并 compose | `/dify-backup-and-upgrade 做一份可离线恢复的包` |
-| [dify-compose-and-config](skills/dify-compose-and-config/SKILL.md) | 改 compose / `.env` / nginx / 社区版限额 | 1.17 `env_file` 规则、workers、超时栈、画布 vs 运行时两套限额、邮件、登录开关 | `/dify-compose-and-config 把 Loop 上限和 workflow 步数都放开` |
+| [dify-compose-and-config](skills/dify-compose-and-config/SKILL.md) | 改 compose / `.env` / nginx / **新环境平台调优** | 旋钮表（现网例子 vs 建议值）、recreate vs reload、worker/超时/上传/SSRF/DB/日志 | `/dify-compose-and-config 按最佳值调新盒子的 Dify` |
 
 ### 技能之间怎么跳
 
