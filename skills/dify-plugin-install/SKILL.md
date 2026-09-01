@@ -53,3 +53,5 @@ Fat extras (`markitdown[all]`, GPU stacks) need every extra wheel or they fail a
 
 ## Intranet vs SaaS
 Prefer user-supplied URL: OpenAI-compatible, vLLM, Xinference, SQL, Redis, SSH, SMTP, HTTP Request **node** (builtin). Skip extra Google/Tavily/Exa unless asked. Official ids sometimes do not exist (`langgenius/vllm` → community vLLM plugin; `langgenius/time` → a datetime tool).
+
+`langgenius/mineru` tool `parse-file` with `server_type=local` does **not** poll. If the local MinerU `/file_parse` is async (`task_id` only), wrap it in a reusable workflow: try the plugin, then fall back to the site's OpenAPI `submit_parse` / `task_status` / `task_result` loop. List first (`GET .../plugin/list`); do not install extra OCR plugins unless asked.

@@ -20,6 +20,9 @@ Working tree on `main`. **No GitHub Release yet.**
 - Routes scanned from Dify 1.17.0 `api/controllers` (console, `/v1`, WebApp `/api`, OpenAPI, MCP, inner API).
 
 ### Changed
+- OCR: reuse one published workflow-as-tool (`provider_type: workflow`); do not drop `langgenius/mineru` on every canvas. Plugin `parse-file` does not poll async MinerU `/file_parse` — fall back to OpenAPI submit/status/result + loop. End fields must not be named `text` (reserved). Code nodes cannot take File; optional file → if-else `not empty`. After OCR graph edits, publish then `workflow/update`.
+- Triggers: no delay queue; `start` and `trigger-schedule` cannot share a graph (split ingest vs daily cron). Cron must be published. `draft/trigger/run` returns `waiting` until due — simulate with `draft/run` `inputs: {}` or `/v1/workflows/run`.
+- Host iron (docs-backed boxes): one LLM :8001, DSL `json.dump`, `project/work/<project>/v1/`, do not publish frozen contract-review/kbqa apps.
 - Folded generic lessons from 1.16.1 production ops into the 1.17 skills (no host secrets, IPs, or app ids):
   - Service API file ACL: same key + same stable `user`; file input is one object; prefer `blocking` with HTTP timeout ≥ 600s; `/v1/chat/completions` is often 404.
   - 1.17 api/worker/web load `.env` via `env_file`; nginx/ssrf/weaviate/db still need listed keys. `SSRF_PROXY_ALLOW_PRIVATE_IPS` is a CIDR list, not `true`. Canvas sync is Socket.IO `/socket.io/`.

@@ -49,7 +49,11 @@ POST /workspaces/current/tool-provider/workflow/delete
 {"workflow_tool_id":"<uuid>"}
 ```
 
-Map start vars in `parameters[]`. Callers see the **published** graph, not the draft.
+Map start vars in `parameters[]`. Callers see the **published** graph, not the draft. After you change the source graph: **publish again**, then `POST .../workflow/update` so `version` refreshes.
+
+Caller tool node: `provider_type: workflow`, `provider_id` = `workflow_tool_id` (UUID from GET), `tool_name` = the alphanumeric `name`. End fields named `text` / `json` / `files` are reserved — the tool wraps all outputs into `text`. Use `markdown` / `plain_text` / `meta` / `error` instead. If the caller only sees `text`, JSON-parse it.
+
+**OCR reuse.** Do not drop `langgenius/mineru` `parse-file` on every business canvas. One workflow: file in → plugin (and/or OpenAPI poll fallback) → stable markdown out → publish as tool (example name `mineruocr`). `langgenius/mineru` `server_type=local` reads `/file_parse` **immediately**; MinerU 3.x that returns only `task_id` looks empty unless you fall back to `submit_parse` / `task_status` / `task_result` + loop. Do not invent a parallel HTTP MinerU path until the plugin is proven dead.
 
 ## Builtin / plugin credentials
 
@@ -102,6 +106,7 @@ On 1.17.0, Agent Studio tool calling is flaky. If the customer demo is a tool-us
 |---|---|---|
 | `Unknown error` no traceback | wrong `tool_name` | use `operationId` / plugin name / MCP name |
 | Tool node empty output | API tool only returns `text` | parse JSON in a code node |
-| Workflow-as-tool stale | draft not published | publish the source app |
+| Workflow-as-tool stale | draft not published, or tool not updated after publish | publish source app; `POST .../workflow/update` |
+| Workflow tool missing `markdown` | end field named `text` | rename to `markdown` / `plain_text`; parse wrapper `text` |
 | MCP tools empty after create | server unreachable / SSRF | `NO_PROXY`; retry `.../mcp/tools/{id}` |
 | Builtin add 400 | plugin not installed | [Dify plugin install](sand-workflow:dify-plugin-install) |
