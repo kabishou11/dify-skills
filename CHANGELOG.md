@@ -10,6 +10,12 @@ A GitHub Release is created only when a Dify line is frozen. Until then everythi
 Working tree on `main`. **No GitHub Release yet.**
 
 ### Added
+### Added (2026-09-01 field run, dify-server-01)
+- **Files URL split**: `FILES_URL` = browser origin, `INTERNAL_FILES_URL` = container origin; browser downloads of tool files and plugin-fetching of Dify files are separate audiences (compose-and-config).
+- **DSL proven facts 0.7.0**: `document-extractor` node name, unicode if-else operators, tool-parameter split by schema `form` (llm→`tool_parameters`, form→`tool_configurations`), `error_strategy` enum only `fail-branch|default-value`, SSE `draft/run`, KB `result` as JSON string, code-node chained JSON repair for LLM garbage (unescaped quotes, duplicated bare keys).
+- **Knowledge-base 1.17 creation path**: `hierarchical_model` + `process_rule.mode: hierarchical` + `segmentation`/`subchunk_segmentation`; upload via `data_source`; node-level `multiple_retrieval_config.weights` must be rewritten on copy (empty results otherwise).
+- **Model provider**: OpenAI-compatible per-model credential flow (`models/credentials` → `current_credential_id` → `models`), core-name vs display-name in default-model; plugin-level `add` needs `type: api-key`, key name from plugin yaml.
+- **Plugin local patch pattern**: cwd source patches survive until the next upgrade; PaddleOCR VL refuses `outputFormats` (422). OCR fallback graph (default-value extractor → if-else text-layer threshold → OCR → clean LaTeX/img → merge).
 - New-box **platform** tune (not custom tools): `dify-development` section 「新环境：Dify 平台基础配置」 plus compose-and-config tables (knob / clone-like example / recommend / why / recreate vs reload) covering workers/Celery/beat, timeout stack, uploads/413, workflow caps, sandbox, SSRF/NO_PROXY, Postgres/Redis, login/mail/marketplace, json-file logs, reverse-proxy URLs, and OpenAI-compatible wiring.
 - Triggers (schedule/webhook/plugin), public `/triggers/webhook/{id}` (not `/webhook/{id}`), plugin Endpoint vs trigger, code-node sandbox timeouts.
 - Agent Studio runtime (sandbox files, build-draft, snapshot timeout). Dataset metadata, child chunks, hit-test. Workflow/conversation logs and stats.

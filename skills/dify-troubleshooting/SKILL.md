@@ -106,3 +106,17 @@ The table above is the symptom index. Compose knobs: [Dify compose and config](s
 
 ## Do not
 Set `DEPLOYMENT_EDITION=ENTERPRISE`. Open container egress with iptables to "fix" marketplace. Delete `volumes/` to fix one plugin. Put host passwords or `SECRET_KEY` into skills/git. Do not retune a live production stack as if it were empty.
+
+## Field-proven (2026-09-01)
+
+| Symptom | Cause | Fix |
+|---|---|---|
+| Browser: workflow output file download says "cannot extract file"/404 | `FILES_URL` is a container-private origin → signed links bound to it for external viewers | split `FILES_URL` (browser origin) vs `INTERNAL_FILES_URL` (`http://api:5001`), recreate `api`; see compose-and-config |
+| PaddleOCR tool: `Invalid file URL '/files/...'` | tool got an origin-free URI; SDK tries `httpx.get` on it | set `INTERNAL_FILES_URL` + patch plugin utils to prefix (prefer INTERNAL) |
+| PaddleOCR-VL: job 422 "OCR服务请求失败" | `outputFormats=markdown` not supported by VL model | remove the param |
+| Canvas publish: tool panel "cannot be empty" (e.g. `force_text_value`, `title`) | parameters split by value kind instead of schema `form`; `form=form` must live in `tool_configurations`, `form=llm` in `tool_parameters` | distribute by plugin yaml `parameters[].form` |
+| draft/run: client JSON parse fails though `status: succeeded` | response is SSE | parse `data:` lines, read `workflow_finished` |
+| LLM→code JSON parse yields empty arrays | model emitted unescaped quotes / duplicated bare key `"k","k":` | chained repair in the code node (see apps-and-workflows DSL proven facts) |
+| KB retrieval node empty but hit-test fine on one box | node `multiple_retrieval_config` still references the source box's reranker/embedding | rewrite node config (weights) to this box; empty config silently returns `[]` |
+| Knowledge retrieval minutes-slow intermittently | hosted embedding free tier throttling (burst) | retry later / switch embedding provider; keep retrieval timeouts sane; verify with hit-test timing |
+| `no available node, plugin runtime not found` right after daemon restart | plugin runtime still initializing | wait for `local runtime ready` in daemon logs (~1 min) |

@@ -81,3 +81,13 @@ Hit-test (`/hit-testing`) does **not** apply canvas metadata filters. To verify 
 ## Move / copy
 
 `dataset_ids` in DSL are UUIDs. After import on a new instance they still point at the old ids unless you remap. External KB configs are per-workspace, not inside the DSL.
+
+## 1.17 creation path (validated end-to-end)
+
+- `doc_form` enum is `text_model` / `qa_model` / **`hierarchical_model`** (old `parent_model` → *Invalid doc_form*).
+- `process_rule.mode`: `automatic` | `custom` | **`hierarchical`** (parent-child). Rules shape changed:
+  `rules.parent_mode` (`paragraph`/`full-doc`) + `rules.segmentation` (parent: `separator`/`max_tokens`/`chunk_overlap`) + `rules.subchunk_segmentation` (child) — do not nest `parent_chunk`/`child_chunk` under segmentation (pydantic rejects with `max_tokens Field required`).
+- Upload: `POST /console/api/datasets/{id}/documents` with a JSON body `{data_source: {info_list: {data_source_type: upload_file, file_info_list: {file_ids: [id]}}}, ...}` after `POST /console/api/files/upload`. There is **no** `create-by-text` console route in 1.17 (404) and plain-text body fails with `Data source is required`.
+- `embedding_model` on create/upload must match an active row; a broken provider (e.g. 1113/1308 quota errors) leaves `indexing_status: error` — the dataset id stays valid, delete the failed document and re-upload after fixing the provider (no retry endpoint needed).
+- Hybrid weights in `retrieval_model` for dataset create use the `{[{type: semantic|keyword, value}]}` shape at dataset level; workflow **node** `multiple_retrieval_config.weights` uses `{vector_setting: {embedding_provider_name/embedding_model_name/vector_weight}, keyword_setting: {keyword_weight}}` — the node config must be rewritten on import or the box's embeddings are silently never used (empty results).
+- Parent-child hit-test returns `segment` (child) with `parent` attached; `child_chunks` included in workflow retrieval results.
