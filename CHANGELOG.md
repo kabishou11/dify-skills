@@ -23,8 +23,8 @@ Working tree on `main`. **No frozen `v1.17.0` Release yet.** Preview zips may be
 - Triggers (schedule/webhook/plugin), public `/triggers/webhook/{id}` (not `/webhook/{id}`), plugin Endpoint vs trigger, code-node sandbox timeouts.
 - Agent Studio runtime (sandbox files, build-draft, snapshot timeout). Dataset metadata, child chunks, hit-test. Workflow/conversation logs and stats.
 - `dify-compose-and-config`: 1.17 `.env` / `docker/envs` injection, workers, timeout stack, dual-plane workflow caps, nginx recreate vs reload, postgres/redis, mail, community login gates.
-- README rewritten: problem map, mermaid diagrams, per-skill usage, Cursor / Claude Code / Codex install paths, acknowledgements.
-- `scripts/install.sh` copies `skills/dify-*` into `.cursor/skills`, `.claude/skills`, or `.agents/skills`.
+- README rewritten: problem map, mermaid diagrams, per-skill usage, Agent Skills install paths, maintainer contact.
+- `scripts/install.sh` copies `skills/dify-*` into a target skills directory (`user` → `~/.agents/skills`, `project` → `./.agents/skills`, or `--dest`).
 
 - Router plus 13 domain skills covering console, plugins, apps, knowledge, models, agents, service API, intranet, backup, troubleshooting, API catalog, and workspace extras (Skills, snippets, Agent roster, RAG pipeline, MCP).
 - Routes scanned from Dify 1.17.0 `api/controllers` (console, `/v1`, WebApp `/api`, OpenAPI, MCP, inner API).

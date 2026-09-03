@@ -141,7 +141,7 @@ mkdir -p dist
 
 ## 安装
 
-把技能装进 coding agents 的 skills 目录（下面按常见目标列出）。若要进 **Dify 工作区**，用上一节的 Import，不要把整仓拷进控制台。
+把技能装进兼容 [Agent Skills](https://agentskills.io) 的 `skills/` 目录。若要进 **Dify 工作区**，用上一节的 Import，不要把整仓拷进控制台。
 
 先克隆：
 
@@ -153,16 +153,12 @@ cd dify-skills
 然后选一个目标。安装脚本会把 `skills/dify-*` **复制**到对应目录（同名旧目录会被替换，本仓库里的源文件不动）。
 
 ```bash
-# 本机所有项目都能用（个人）
-./scripts/install.sh cursor-user     # ~/.cursor/skills
-./scripts/install.sh claude-user     # ~/.claude/skills
-./scripts/install.sh codex-user      # ~/.agents/skills
+# 本机默认目录
+./scripts/install.sh user        # ~/.agents/skills
 
 # 只给当前仓库用（提交进 git，团队共享）
 # 先 cd 到你的业务项目根目录
-/path/to/dify-skills/scripts/install.sh cursor-project    # ./.cursor/skills
-/path/to/dify-skills/scripts/install.sh claude-project    # ./.claude/skills
-/path/to/dify-skills/scripts/install.sh codex-project     # ./.agents/skills
+/path/to/dify-skills/scripts/install.sh project    # ./.agents/skills
 ```
 
 任意路径：
@@ -174,85 +170,11 @@ cd dify-skills
 手工复制也行，效果一样：
 
 ```bash
-mkdir -p ~/.cursor/skills
-cp -R skills/dify-* ~/.cursor/skills/
+mkdir -p ~/.agents/skills
+cp -R skills/dify-* ~/.agents/skills/
 ```
 
-装好后用 `/dify-development` 试一次。看不到技能就重启对应助手。
-
-### Cursor
-
-官方说明：[Cursor Agent Skills](https://cursor.com/docs/skills)
-
-| 范围 | 目录 |
-| --- | --- |
-| 当前项目 | `.cursor/skills/` 或 `.agents/skills/` |
-| 本机全局 | `~/.cursor/skills/` 或 `~/.agents/skills/` |
-
-Cursor 也会读 `.claude/skills/` 和 `.codex/skills/`（兼容）。
-
-1. 跑 `./scripts/install.sh cursor-user` 或 `cursor-project`。
-2. 打开 **Customize → Skills**，应能看到 `dify-development` 等。
-3. Agent 对话框输入 `/`，搜 `dify-development`。
-4. 或者直接说「帮我在自托管 Dify 上建一个 workflow」，Agent 会按 description 自己选。
-5. 要把技能钉在整段对话里：选中该 skill 当 Custom Mode（Mac `Option+Enter`，Windows `Alt+Enter`）。
-
-**Cloud Agent / 远程 SSH 读不到你机器上的 `~/.cursor/skills/`。** 要给云端用，把技能装进**项目** `.cursor/skills/` 并提交。
-
-### Claude Code
-
-官方说明：[Claude Code Skills](https://code.claude.com/docs/en/skills)
-
-| 范围 | 目录 |
-| --- | --- |
-| 当前项目 | `.claude/skills/<id>/SKILL.md` |
-| 本机全局 | `~/.claude/skills/<id>/SKILL.md` |
-
-斜杠命令来自**目录名**，所以是 `/dify-development`，不是 YAML 里的中文名。
-
-1. `./scripts/install.sh claude-user` 或 `claude-project`。
-2. 在项目里跑 `claude`，输入 `/skills` 或直接 `/dify-development`。
-3. 自然语言：「登录我的 Dify，列出应用」也会触发。
-4. 项目技能请提交 `.claude/skills/`。Cowork / 云会话**不会**读你电脑上的 `~/.claude/skills/`，要靠仓库里的项目技能。
-5. 可选：在 `CLAUDE.md` 加一句 `For any Dify work, start with /dify-development.`
-
-### Codex
-
-官方说明：[Codex Skills](https://developers.openai.com/codex/skills)
-
-| 范围 | 目录 |
-| --- | --- |
-| 当前项目 | `.agents/skills/`（从 cwd 一直找到仓库根） |
-| 本机全局 | `~/.agents/skills/` |
-
-1. `./scripts/install.sh codex-user` 或 `codex-project`。
-2. CLI / IDE 里 `/skills` 浏览，或 `$dify-development` 显式调用。
-3. description 匹配时会隐式加载。新技能一般会自动发现，没有就重启 Codex。
-4. 可选：在仓库根放 `AGENTS.md`，写 `For Dify operations, use the dify-development skill.`
-5. 临时关掉某份技能（不删文件）可写 `~/.codex/config.toml` 的 `[[skills.config]]`。
-
-### 三家对照
-
-```mermaid
-flowchart TB
-  SRC["本仓库 skills/dify-*/SKILL.md"]
-  SRC --> CU["Cursor<br/>.cursor/skills 或 ~/.cursor/skills"]
-  SRC --> CC["Claude Code<br/>.claude/skills 或 ~/.claude/skills"]
-  SRC --> CX["Codex<br/>.agents/skills 或 ~/.agents/skills"]
-  CU --> SLASH["/dify-development"]
-  CC --> SLASH
-  CX --> DOLLAR["$dify-development"]
-```
-
-| | Cursor | Claude Code | Codex |
-| --- | --- | --- | --- |
-| 项目目录 | `.cursor/skills/` | `.claude/skills/` | `.agents/skills/` |
-| 本机目录 | `~/.cursor/skills/` | `~/.claude/skills/` | `~/.agents/skills/` |
-| 显式调用 | `/dify-development` | `/dify-development` | `$dify-development` |
-| 自动选用 | description 匹配 | description 匹配 | description 匹配 |
-| 云端会话 | 只用项目技能 | 只用项目技能 | 提交 `.agents/skills/` |
-
-其它兼容 Agent Skills 的工具：把 `skills/dify-*` 拷到它扫描的 skills 根目录即可。
+装好后用 `/dify-development` 试一次。看不到技能就重启对应助手。其它扫描 `SKILL.md` 的工具：把 `skills/dify-*` 拷到它的 skills 根目录即可。
 
 ---
 
@@ -264,8 +186,6 @@ flowchart TB
 4. **一次做一件。** 登录 → 模型 → 插件 → 知识库 → 应用 → 发布 → `/v1` 验证。画布改完不等于产品可用。
 
 ### 示例对话
-
-**Cursor / Claude Code**
 
 ```text
 /dify-development
@@ -285,10 +205,8 @@ flowchart TB
 用同一个稳定 user 上传文件再 blocking 跑 workflow，超时 600s。
 ```
 
-**Codex**
-
 ```text
-$dify-troubleshooting
+/dify-troubleshooting
 画布一直转「同步数据中」，nginx 日志里 /socket.io/ 是 308。按技能修。
 ```
 
@@ -445,11 +363,18 @@ python3 scripts/check-skills.py
 
 ---
 
+## 维护者
+
+- **[kabishou11](https://github.com/kabishou11)**（Zhu Lei）
+- [woicyou@gmail.com](mailto:woicyou@gmail.com)
+- [woicyou@qq.com](mailto:woicyou@qq.com)
+
+Issue / PR 请打到本仓库。不要把密码或 `SECRET_KEY` 发到邮箱。
+
 ## 致谢
 
 - **[Dify](https://github.com/langgenius/dify)** / [LangGenius](https://github.com/langgenius)：开源 LLM 应用平台。本仓库是社区侧的操作技能，不是官方文档，也不代表 Dify 团队。
-- **[Agent Skills](https://agentskills.io)** 开放规范：`SKILL.md` 能在多家助手之间共用。
-- **[Cursor](https://cursor.com/docs/skills)**、**[Claude Code](https://code.claude.com/docs/en/skills)**、**[Codex](https://developers.openai.com/codex/skills)**：落地这套技能的三家助手。
+- **[Agent Skills](https://agentskills.io)** 开放规范：`SKILL.md` 能在兼容该格式的助手之间共用。
 - 自托管 / 内网场景下踩过坑的操作者：CSRF、compose 注入、Socket.IO、文件 ACL、离线包这些条目来自真实运行，而不是凭空编写。
 
 Dify 是 LangGenius 的商标。本仓库按 [MIT](LICENSE) 许可。

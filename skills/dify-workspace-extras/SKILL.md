@@ -9,7 +9,7 @@ description: >-
 
 Use this for Console surfaces that are not the core app canvas, plugins, or dataset upload. Prefix `/console/api`. Cookie + `X-CSRF-Token` from [Dify console API](sand-workflow:dify-console-api). Route index: [Dify API catalog](sand-workflow:dify-api-catalog).
 
-These are **Dify** Skills / Agents, not Cursor skills.
+These are **Dify workspace** Skills / Agents, not this repository's operating skills.
 
 **1.17.0 caution.** Workspace Skill **zip/blob upload**, FastMCP OAuth, and Agent Studio tool calling have open upstream bugs. Keep the HTTP map below for when they work; do not build a customer demo on them until a patch release. Classic `mode: workflow` + `/v1` is the stable path.
 
@@ -166,7 +166,7 @@ GET /apps/{id}/workflow-runs/{run_id}
 GET /apps/{id}/workflow-runs/{run_id}/node-executions
 ```
 
-Chatflow debugger: `GET /apps/{id}/advanced-chat/workflow-runs` (+ `/count`). `status`: `running` | `succeeded` | `failed` | `stopped` | `partial-succeeded`. `time_range`: `7d` | `4h` | `30m` | `30s`. Cursor: `last_id`. Paused human-input: `GET /workflow/{workflow_run_id}/pause-details`. Archived-run export: `GET /apps/{id}/workflow-runs/{run_id}/export` → `presigned_url` (404 `archive_log_not_found` if never archived).
+Chatflow debugger: `GET /apps/{id}/advanced-chat/workflow-runs` (+ `/count`). `status`: `running` | `succeeded` | `failed` | `stopped` | `partial-succeeded`. `time_range`: `7d` | `4h` | `30m` | `30s`. Pagination: `last_id`. Paused human-input: `GET /workflow/{workflow_run_id}/pause-details`. Archived-run export: `GET /apps/{id}/workflow-runs/{run_id}/export` → `presigned_url` (404 `archive_log_not_found` if never archived).
 
 ### Statistics
 
