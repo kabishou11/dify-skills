@@ -5,13 +5,18 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 [![Agent Skills](https://img.shields.io/badge/Agent_Skills-SKILL.md-111)](https://agentskills.io)
 
-给编码助手用的 **自托管 Dify 操作技能**：真实 HTTP、鉴权、payload、失败模式。助手按菜单做，不要自己编路由。
+给 **coding agents** 用的 [Agent Skills](https://agentskills.io)（`SKILL.md`）：操作自托管 **[Dify](https://github.com/langgenius/dify) Community 1.17** 的控制台、Compose、插件与内网。真实 HTTP、鉴权、payload、失败模式。助手按菜单做，不要自己编路由。
 
-当前跟踪 **Dify 1.17.0 Community**。`main` 是最新线，稳定 GitHub Release 还没有打。
+当前跟踪 **Dify 1.17.0 Community**。官方文档：[Skills](https://docs.dify.ai/en/self-host/use-dify/build/skills)。`main` 是最新线；冻结快照 `v1.17.0` 还没有打。可导入的检查清单见预发布包 `dify-1.17.0-skills-preview`（若已发布）或仓库 [`dist/`](dist/)。
 
-> 这不是 Dify 控制台里的「工作区 Skills」。那些是给 *Dify Agent* 用的；这套是给 *Cursor / Claude Code / Codex* 用的。
+> **这不是 Dify 工作区 Skills 的替代品。**
+> 控制台 Skills 页上的技能是给 *Dify Agent* 用的；本仓库是运维手册（Agent Skills / `SKILL.md`）。
+>
+> 若要把检查清单放进 Dify Agent，可以把每个 `skills/<name>/` 打成 zip（**`SKILL.md` 必须在压缩包根目录**），在 Dify 1.17 Skills 页用 **Import .zip / .skill** 导入成草稿，审阅后再发布。
+>
+> Dify Agent 只有挂了 HTTP / 代码类工具时，才能执行这些手册里的请求。像 [dify-console-api](skills/dify-console-api/SKILL.md) 这种偏外部 curl 对照表，仍然可以导入，但对没有工具的对话 Agent 帮助有限。
 
-English: executable [Agent Skills](https://agentskills.io) for operating self-hosted [Dify](https://github.com/langgenius/dify). Skills are English runbooks; this README is Chinese-first.
+English: [Agent Skills](https://agentskills.io) (`SKILL.md`) for operating self-hosted [Dify](https://github.com/langgenius/dify) Community 1.17 (console, Compose, plugins, intranet). They are **not** a substitute for in-app [workspace Skills](https://docs.dify.ai/en/self-host/use-dify/build/skills), but each skill folder can be zipped and imported on the Dify 1.17 Skills page (`Import .zip` / `.skill`) as a draft. Skills are English runbooks; this README is Chinese-first.
 
 ---
 
@@ -80,7 +85,9 @@ dify-skills/
 │   ├── dify-development/SKILL.md      ← 入口 / 分流
 │   ├── dify-api-catalog/SKILL.md
 │   └── dify-…/SKILL.md
-├── scripts/install.sh                 ← 拷到 Cursor / Claude / Codex
+├── dist/                              ← Dify Import 用的 zip（SKILL.md 在根）
+├── scripts/install.sh                 ← 拷到 coding agents 的 skills 目录
+├── scripts/package-dify-workspace.py  ← 打成 dist/*.zip
 ├── scripts/check-skills.py
 ├── VERSION                            ← 对准哪条 Dify
 ├── CHANGELOG.md
@@ -91,7 +98,50 @@ dify-skills/
 
 ---
 
+## 导入到 Dify 1.17 工作区
+
+本仓库的正文是给 coding agents 的运维手册，**不能**当成 Dify 控制台 Skills 库的官方替代。操作员若希望 Dify Agent 也能读同一份检查清单，可以按官方 [Skills · Import](https://docs.dify.ai/en/self-host/use-dify/build/skills) 把单个技能打成包导入。
+
+1. 取得 zip（`SKILL.md` 在压缩包根目录，不要把整个 `skills/` 打成一个包）：
+   - 下载 [`dist/*.zip`](dist/)，或 GitHub 预发布 `dify-1.17.0-skills-preview` 的附件；
+   - 或本地打包（见下）。
+2. 打开 Dify 控制台 **Skills** 页 → **Import** → 选择 `.zip` 或 `.skill`（默认上限 50 MB，可用 `UPLOAD_SKILL_FILE_SIZE_LIMIT` 调整）。
+3. 导入后是**草稿**。核对 frontmatter / 正文后再 Publish。不要把含密码或 `SECRET_KEY` 的本地副本传上去。
+
+默认打这四份（适合当 in-app 检查清单）：
+
+| 包 | 适合放进 Dify Agent 的原因 |
+| --- | --- |
+| `dist/dify-troubleshooting.zip` | 挂了先按症状分层 |
+| `dist/dify-compose-and-config.zip` | compose / `.env` / nginx 旋钮 |
+| `dist/dify-plugin-install.zip` | Marketplace / 离线 `.difypkg` / uv |
+| `dist/dify-console-api.zip` | 登录、CSRF、常用 console 路由（长 curl 对照表） |
+
+`dify-console-api` 明显是给外部 HTTP 操作员写的。仍然打包，但 **Dify Agent 只有具备 HTTP / 代码工具时才用得上**；纯对话 Agent 读这份手册几乎执行不了请求。
+
+```bash
+# 默认四份 → dist/*.zip
+python3 scripts/package-dify-workspace.py
+
+# 全部 skills/dify-*
+python3 scripts/package-dify-workspace.py --all
+
+# Dify 也接受 .skill（内容与 zip 相同）
+python3 scripts/package-dify-workspace.py --format skill
+```
+
+没有脚本时，手动保证 `SKILL.md` 在 zip 根：
+
+```bash
+mkdir -p dist
+( cd skills/dify-troubleshooting && zip -r ../../dist/dify-troubleshooting.zip SKILL.md )
+```
+
+---
+
 ## 安装
+
+把技能装进 coding agents 的 skills 目录（下面按常见目标列出）。若要进 **Dify 工作区**，用上一节的 Import，不要把整仓拷进控制台。
 
 先克隆：
 
@@ -344,18 +394,21 @@ flowchart LR
 | --- | --- |
 | [`VERSION`](VERSION) | 这份树对准的 Dify 版本、是否冻结 |
 | `main` | **最新 Dify**。会继续改 |
+| GitHub 预发布 `dify-1.17.0-skills-preview` | 可导入 zip，**不是**冻结契约 |
 | GitHub Release `vX.Y.Z` | 针对 **Dify `X.Y.Z`** 的稳定快照 |
 
 1. 版本号跟 Dify 走，不跟本仓库 SemVer 走。
-2. 一条 Dify 线冻结时才打一次稳定 Release。
-3. **现在不要创建 Release。** 1.17 仍在 `main` 上，状态 `unreleased`。
-4. 不要把 `main` 上的提交当成已发布契约。
+2. 一条 Dify 线冻结时才打一次稳定 Release（tag 等于 Dify 版本，例如 `v1.17.0`）。
+3. **现在不要打冻结的 `v1.17.0`。** 1.17 仍在 `main` 上，状态 `unreleased`。
+4. 预发布包只方便 Import，不把 `main` 上的提交当成已发布契约。
 
 ```
-main          ── 最新 Dify（现在 1.17.0，未冻结）
-                  │
-                  ▼  冻结后才打
-v1.17.0       ── 对应 Dify 1.17.0 的稳定技能（尚未发布）
+main                          ── 最新 Dify（现在 1.17.0，未冻结）
+  │
+  ├─ dify-1.17.0-skills-preview  可导入 zip（预发布，可更新）
+  │
+  ▼  冻结后才打
+v1.17.0                       ── 对应 Dify 1.17.0 的稳定技能（尚未发布）
 ```
 
 对照 Dify 1.17 源码 `api/controllers` 写成。社区版限制按官方 env 调，不伪装 Enterprise。
@@ -377,6 +430,18 @@ python3 scripts/check-skills.py
 ```
 
 变更见 [CHANGELOG](CHANGELOG.md)。贡献见 [CONTRIBUTING](CONTRIBUTING.md)。
+
+---
+
+## 如何贡献
+
+先开 **issue**，再发 PR。不要直接改 1.17 路由或 compose 旋钮却不说明你在哪台实例上核对过。
+
+- `main` 跟踪 Dify Community **1.17**。HTTP、鉴权、`.env` 注入必须以目标机器的 **compose / `.env`**（以及必要时代码 `api/controllers`）为准，不能靠猜测。
+- 现场验证后再**泛化**：密码、`SECRET_KEY`、内网主机名、业务 UUID 不要进 git。
+- 跑 `python3 scripts/check-skills.py`。若动了默认可导入的四份技能，再跑 `python3 scripts/package-dify-workspace.py`。
+
+细节与 skill 格式见 [CONTRIBUTING](CONTRIBUTING.md)。
 
 ---
 

@@ -3,13 +3,16 @@
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 Version numbers match **Dify**, not SemVer of this repo.
 
-A GitHub Release is created only when a Dify line is frozen. Until then everything lives on `main` under **Unreleased**.
+A frozen GitHub Release (`v1.17.0`) is created only when a Dify line is frozen. Until then everything lives on `main` under **Unreleased**. A **pre-release** may attach importable zips; that is not a freeze.
 
 ## [Unreleased] — Dify 1.17.0
 
-Working tree on `main`. **No GitHub Release yet.**
+Working tree on `main`. **No frozen `v1.17.0` Release yet.** Preview zips may be published as `dify-1.17.0-skills-preview`.
 
 ### Added
+- Dify 1.17 workspace Import packages: `scripts/package-dify-workspace.py` zips `skills/<name>/` with `SKILL.md` at the archive root into `dist/*.zip` (default: troubleshooting, compose-and-config, plugin-install, console-api).
+- README: these are Agent Skills (`SKILL.md`) for operating self-hosted Dify Community 1.17 — not a substitute for in-app workspace Skills, but folders can be imported as drafts on the Skills page.
+
 ### Added (2026-09-01 field run, dify-server-01)
 - **Files URL split**: `FILES_URL` = browser origin, `INTERNAL_FILES_URL` = container origin; browser downloads of tool files and plugin-fetching of Dify files are separate audiences (compose-and-config).
 - **DSL proven facts 0.7.0**: `document-extractor` node name, unicode if-else operators, tool-parameter split by schema `form` (llm→`tool_parameters`, form→`tool_configurations`), `error_strategy` enum only `fail-branch|default-value`, SSE `draft/run`, KB `result` as JSON string, code-node chained JSON repair for LLM garbage (unescaped quotes, duplicated bare keys).

@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import re
 import sys
+import zipfile
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -64,6 +65,18 @@ if "dify:" not in version:
     errors.append("VERSION: missing dify pin")
 if "status:" not in version:
     errors.append("VERSION: missing status")
+
+dist = ROOT / "dist"
+for zpath in sorted(dist.glob("*.zip")) + sorted(dist.glob("*.skill")):
+    rel = zpath.relative_to(ROOT).as_posix()
+    try:
+        with zipfile.ZipFile(zpath) as zf:
+            names = zf.namelist()
+    except zipfile.BadZipFile:
+        errors.append(f"{rel}: not a valid zip")
+        continue
+    if "SKILL.md" not in names:
+        errors.append(f"{rel}: SKILL.md must be at the archive root (Dify Import)")
 
 if errors:
     print("check-skills: FAIL")
