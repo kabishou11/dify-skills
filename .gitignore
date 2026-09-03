@@ -3,3 +3,5 @@
 *.pem
 *.key
 .secrets*
+*.pyc
+__pycache__/

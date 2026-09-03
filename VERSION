@@ -1,5 +1,7 @@
 # Compatibility pin for this tree (main).
-# A GitHub Release is not cut until this line is frozen.
+# A frozen GitHub Release (tag v1.17.0) is not cut until this line is frozen.
+# Importable zip pre-releases (e.g. dify-1.17.0-skills-preview) are not a freeze.
 dify: 1.17.0
 status: unreleased
 channel: main
+preview: dify-1.17.0-skills-preview
