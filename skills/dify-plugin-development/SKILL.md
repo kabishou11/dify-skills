@@ -108,3 +108,36 @@ Install the packed file: `POST /console/api/workspaces/current/plugin/upload/pkg
 ## Marketplace
 
 Publish at the public Marketplace (org + signing). Self-host can load unsigned `.difypkg` when signature verification is off.
+
+## Field addendum (1.17, from a full tool-plugin run)
+
+**Schema validation happens daemon-side at launch, not at pack.** A package that zips fine can fail install with `Error loading plugin configuration`. Rules:
+
+- Every `label:` and `description.human_description:` in provider **and** tool yaml needs **both `en_US` and `zh_Hans`** — missing `en_US` = runtime launch failure (`ToolParameter ... label.en_US Field required`).
+- Scalar values containing `: ` (e.g. English sentences) must be quoted or the daemon yaml parse dies (`mapping values are not allowed in this context`).
+- Icons live in **`_assets/`** and `manifest.yaml` + provider `identity.icon` reference the **bare filename** (`icon: icon.png`). A root-level icon file → install 400 `file not found: icon.png / failed to remap assets`. PNG works; SVG optional.
+- Pack **without directory entries**: `find . -type f -not -path '*__pycache__*' | zip -q out.difypkg -@`. Zip built with `zip -r dir/` breaks install (`read provider: is a directory`).
+- Include `.verification.dify.json` (`{"authorized_category":"community"}`) and a `PRIVACY.md`; add `meta.runner` (python 3.12) + `minimum_dify_version` to manifest.
+
+**Reuse Dify-configured models instead of shipping keys.** Declare a param `type: model-selector, scope: llm, form: form`; at runtime it arrives as an `LLMModelConfig` dict. Invoke through the session (keys stay in Dify, zero secrets in the plugin):
+
+```python
+from dify_plugin.entities.model.message import TextPromptMessageContent, ImagePromptMessageContent, UserPromptMessage
+resp = self.session.model.llm.invoke(
+    model_config=model_config,
+    prompt_messages=[UserPromptMessage(content=[
+        TextPromptMessageContent(data=PROMPT),
+        ImagePromptMessageContent(base64_data=b64, format="png",
+                                  mime_type="image/png", detail=ImagePromptMessageContent.DETAIL.HIGH),
+    ])],
+    stream=False)
+text = resp.message.content  # str or list[parts]; join part.data for multimodal
+```
+
+**File params** arrive as `dify_plugin.file.file.File`; `.blob` lazily downloads. The api hands over origin-free `/files/...` urls — rewrite before first access: `if f.url.startswith("/files/"): f.url = (os.environ.get("INTERNAL_FILES_URL") or os.environ.get("FILES_URL") or "http://api:5001") + f.url`.
+
+**Version-switching the same plugin id** does not hot-swap: the workspace keeps the old installation active. Uninstall (`POST .../plugin/uninstall {"plugin_installation_id": <id from plugin/list>}`) then install the new identifier; only then do you see new behavior. Runtime truth: `docker logs plugin_daemon` → `local runtime ready plugin=<id@hash>`.
+
+**Yield both views** for tool nodes: `create_text_message(text)` feeds node output `text`; `create_json_message({...})` feeds `json` — workflows can bind either.
+
+**Renderer trap**: PyMuPDF (fitz) can render embedded-CJK PDFs as garbage glyphs (test PDF extracted only digits/symbols); `pypdfium2` rendered the same file perfectly. For contract-class PDFs prefer `pypdfium2` (`page.render(scale=150/72).to_pil()`).

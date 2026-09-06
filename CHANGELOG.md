@@ -5,6 +5,13 @@ Version numbers match **Dify**, not SemVer of this repo.
 
 A frozen GitHub Release (`v1.17.0`) is created only when a Dify line is frozen. Until then everything lives on `main` under **Unreleased**. A **pre-release** may attach importable zips; that is not a freeze.
 
+## 2026-09-06 — contract-tools 插件实战回灌（zhulei/contract-tools 0.1.4）
+
+- **plugin-development**: 守护端 schema 校验细则（label/human_description 必须双语、含冒号值加引号、图标必须在 _assets、find|zip 打包防目录条目、manifest 需 runner/minimum_dify_version）；`model-selector` 复用 Dify 已配置模型实现插件零密钥（多模态消息构造示例）；File.blob 相对 `/files/` URL 修补；同 id 版本切换需卸载重装；PyMuPDF 中文渲染损坏 → pypdfium2。
+- **plugin-install**: 上传字段名为 `pkg`；uninstall 端点与同 id 升级切换（symptom: 版本升级不生效）；plugin_daemon 重启窗口 `no available node`。
+- **model-providers**: openai_api_compatible 能力标志陷阱（`document_support=support` 会发送 file 类型消息，多数网关 400 Invalid value: file）；`PUT models/credentials` 必须回传完整 api_key（GET 脱敏）。
+- **troubleshooting**: 新增四条症状矩阵（渲染乱码/重启窗口/画布清单为空/版本不生效）。
+
 ## [Unreleased] — Dify 1.17.0
 
 Working tree on `main`. **No frozen `v1.17.0` Release yet.** Preview zips may be published as `dify-1.17.0-skills-preview`.

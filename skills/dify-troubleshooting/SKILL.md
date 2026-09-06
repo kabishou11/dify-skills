@@ -120,3 +120,10 @@ Set `DEPLOYMENT_EDITION=ENTERPRISE`. Open container egress with iptables to "fix
 | KB retrieval node empty but hit-test fine on one box | node `multiple_retrieval_config` still references the source box's reranker/embedding | rewrite node config (weights) to this box; empty config silently returns `[]` |
 | Knowledge retrieval minutes-slow intermittently | hosted embedding free tier throttling (burst) | retry later / switch embedding provider; keep retrieval timeouts sane; verify with hit-test timing |
 | `no available node, plugin runtime not found` right after daemon restart | plugin runtime still initializing | wait for `local runtime ready` in daemon logs (~1 min) |
+
+| Symptom | Cause | Fix |
+|---|---|---|
+| Plugin tool returns garbage for text-PDFs (digits/symbols only) | PyMuPDF mis-renders embedded CJK fonts | switch to `pypdfium2` (`page.render(scale=150/72).to_pil()`); verify by exporting the rendered PNG |
+| `no available node, plugin runtime not found` / api `ConnectError ... plugin_daemon` | call landed in a plugin_daemon **restart window** | retry after daemon logs `local runtime ready`; transient by design |
+| Canvas checklist "合同文件/文件 不能为空" on tool nodes | tool params placed in the wrong bucket | split by schema `form`: `llm`→`tool_parameters`, `form`→`tool_configurations` (see apps-and-workflows) |
+| Bumped plugin version, behavior unchanged | workspace still bound to old installation | uninstall + reinstall same-id (see plugin-install) |

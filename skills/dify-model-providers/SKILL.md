@@ -65,7 +65,10 @@ DELETE /workspaces/current/model-providers/{provider}/models
 {"model":"<display-name>","model_type":"llm"}
 ```
 
-Custom-model **requires** `credential_id`. Per-model credentials: `POST .../models/credentials` `{"model":"...","model_type":"llm","name":"...","credentials":{...}}`. Parameter rules: `GET .../models/parameter-rules?model=`. Available by type: `GET /workspaces/current/models/model-types/llm`.
+Custom-model **requires** `credential_id`. Per-model credentials: `POST .../models/credentials` `{"model":"...","model_type":"llm","name":"...","credentials":{...}}`. **`PUT .../models/credentials` must resend the full `api_key`** — GET returns it masked, and posting the masked value back fails provider validation. Activate a per-model credential with `POST .../models/credentials/switch` `{"model","model_type","credential_id"}`.
+
+**Capability flags on openai_api_compatible LLMs**: `vision_support` / `document_support` / `video_support` / `audio_support`. `document_support=support` makes Dify send `file`-type content parts — many OpenAI-compatible gateways accept only `text`/`image_url` and reject with 400 `Invalid value: file` (ModelScope, 2026-09). Set `document_support=no_support` unless the backend truly takes file parts; vision via image_url still works.
+ Per-model credentials: `POST .../models/credentials` `{"model":"...","model_type":"llm","name":"...","credentials":{...}}`. Parameter rules: `GET .../models/parameter-rules?model=`. Available by type: `GET /workspaces/current/models/model-types/llm`.
 
 Default for the workspace:
 

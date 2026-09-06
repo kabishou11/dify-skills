@@ -62,3 +62,11 @@ Prefer user-supplied URL: OpenAI-compatible, vLLM, Xinference, SQL, Redis, SSH, 
 - Path splits: first install `0.0.26-era` plugins still expose per-tenant credentials via `providers` rows; check `GET /workspaces/current/model-providers/{provider}/credentials` for the key name before `add`.
 - PaddleOCR (`langgenius/paddleocr 0.3.0`): `text_recognition` (PP-OCRv6) / `document_parsing` (PP-StructureV3) / `document_parsing_vl` (PaddleOCR-VL-1.6); hosted async jobs polled inside the plugin. **Do not send `outputFormats` to VL** (API 422 `OCR服务请求失败`) — leave it unset. `file` param passes Dify file objects; relative URIs must be patched or set `FILES_URL`/`INTERNAL_FILES_URL` properly.
 - Scan-document fallback pattern in DSL: `document-extractor` (default-value) → if-else text-layer length `< N` → OCR tool → clean (strip LaTeX `$\underline{...}$` and `<img>` tags) → merge with text layer → review pipeline. Verify with a real no-text-layer PDF.
+
+## Uninstall & same-id version switch (1.17)
+
+- Upload: `POST /workspaces/current/plugin/upload/pkg` — multipart field is **`pkg`** (not `file`); response `{unique_identifier}`.
+- Uninstall: `POST /workspaces/current/plugin/uninstall` `{"plugin_installation_id": <id from GET plugin/list>, "preserve_credentials": false}`.
+- **Upgrading the same plugin-id**: daemon compiles the new package, but the workspace keeps the OLD installation active until you uninstall + install the new identifier. Symptom: "I bumped the version but behavior is unchanged". Verify active version via `plugin/list → meta.plugin_unique_identifier`.
+- Launch failures surface in `GET .../plugin/tasks` (status failed) **and** daemon logs; a failed launch leaves no runtime — `docker logs plugin_daemon` shows the pydantic/yaml error (see plugin-development addendum).
+- Restart window: calls during daemon restart fail `no available node, plugin runtime not found` — retry after `local runtime ready`; the api side may also log transient `ConnectError: Name or service not known` for `plugin_daemon`.
