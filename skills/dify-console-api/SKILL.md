@@ -36,7 +36,7 @@ First-time box: open `/install` only if setup is `not_started`. Do not POST `/se
 ## Endpoint map
 | Area | Routes | Next skill |
 |---|---|---|
-| Apps | `GET/POST /apps`, `GET/PUT/DELETE /apps/{id}`, `POST /apps/{id}/copy`, `GET /apps/{id}/export`, `POST /apps/imports` | Dify apps and workflows |
+| Apps | `GET/POST /apps`, `GET/PUT/DELETE /apps/{id}`, `POST /apps/{id}/copy`, `GET /apps/{id}/export`, `POST /apps/imports` | Dify apps and workflows — **never** delete-and-reimport to ship a version: `imports` mints a new `app_id` and keys/site/logs/triggers on the old id die |
 | Canvas | `GET/POST /apps/{id}/workflows/draft`, `POST .../publish`, `POST .../draft/run`, human-input, comments | Dify apps and workflows |
 | Datasets | `GET/POST /datasets`, `/datasets/{id}/documents`, segments, metadata | Dify knowledge bases |
 | RAG pipeline | `/rag/pipelines`, `/rag/pipeline/dataset` | Dify workspace extras |

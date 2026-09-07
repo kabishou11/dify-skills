@@ -9,6 +9,11 @@ A frozen GitHub Release (`v1.17.0`) is created only when a Dify line is frozen. 
 
 - **apps-and-workflows**: 新增红线「NEVER delete-and-reimport to ship a new version」+ Publish checklist 第 8 项。`POST /apps/imports` 每次生成全新 `app_id`，而 Service API key、WebApp site、会话/运行日志（test 记录）、trigger 行都绑在旧 id 上——重导入即整体失联，表现为「每次发新版本 apikey 消失、test 记录没了」。正确做法是**同一 id 原地 draft 同步 + publish**；`ensure_app_key` 类 helper 必须先 GET 复用已有 key，不能重建。
 - **service-api**: key 绑定的是 `app_id` 不是 DSL；交叉引用上述红线。
+- **完善（同日）**：
+  - **troubleshooting**: 症状矩阵补「Service API key 消失 / 运行与 test 记录丢失」行——指向 delete-and-reimport 根因与原地同步修法（症状排查的第一入口）。
+  - **console-api**: 端点表 Apps 行加警示（`DELETE /apps/{id}` / `POST /apps/imports` 的失联后果）。
+  - **development**: 路由分流「Import vs edit」补红线指引，避免分流时误选 imports 发版。
+  - **apps-and-workflows**: 「Bindings when moving DSL between instances」补注——跨实例导入是合法的新 app 场景（新 id、新 key、空日志），红线只管**同实例发版**，两条边界划清。
 
 ## 2026-09-06 — contract-tools 插件实战回灌（zhulei/contract-tools 0.1.4）
 

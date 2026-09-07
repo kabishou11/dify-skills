@@ -124,6 +124,7 @@ Set `DEPLOYMENT_EDITION=ENTERPRISE`. Open container egress with iptables to "fix
 | Symptom | Cause | Fix |
 |---|---|---|
 | Plugin tool returns garbage for text-PDFs (digits/symbols only) | PyMuPDF mis-renders embedded CJK fonts | switch to `pypdfium2` (`page.render(scale=150/72).to_pil()`); verify by exporting the rendered PNG |
+| Service API key "disappeared" / run & test logs gone after shipping a new version | the app was **deleted and re-imported** — `POST /apps/imports` mints a new `app_id`; keys, site, logs, triggers are bound to the old id | re-create the key on the new id and re-point callers; **never** ship versions this way — sync draft in place on the SAME id then publish (see apps-and-workflows red line) |
 | `no available node, plugin runtime not found` / api `ConnectError ... plugin_daemon` | call landed in a plugin_daemon **restart window** | retry after daemon logs `local runtime ready`; transient by design |
 | Canvas checklist "合同文件/文件 不能为空" on tool nodes | tool params placed in the wrong bucket | split by schema `form`: `llm`→`tool_parameters`, `form`→`tool_configurations` (see apps-and-workflows) |
 | Bumped plugin version, behavior unchanged | workspace still bound to old installation | uninstall + reinstall same-id (see plugin-install) |

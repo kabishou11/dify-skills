@@ -124,7 +124,7 @@ Prefer **serial** over join-heavy graphs: multiple inbound edges can stall as a 
 
 ## Bindings when moving DSL between instances
 
-Remap before import: `dataset_ids`, API-tool `provider_id`, model **display** `name` (Dify entry, not the vLLM `served-model-name`). Same volume restore → UUIDs stay, do not rewrite. After remap, re-check the four rerank fields and tool `operationId`. Trigger `subscription_id` / plugin `provider_id` are **this** tenant — rebuild the plugin subscription, do not copy foreign IDs.
+Remap before import: `dataset_ids`, API-tool `provider_id`, model **display** `name` (Dify entry, not the vLLM `served-model-name`). Same volume restore → UUIDs stay, do not rewrite. After remap, re-check the four rerank fields and tool `operationId`. Trigger `subscription_id` / plugin `provider_id` are **this** tenant — rebuild the plugin subscription, do not copy foreign IDs. Cross-instance import is a **genuinely new app** (fresh `app_id`, new keys, empty logs) — that is the sanctioned `imports` use case; the *delete-and-reimport red line* above is about shipping versions on the **same** instance.
 
 ## Canvas collaboration (editor stuck on "同步数据中")
 

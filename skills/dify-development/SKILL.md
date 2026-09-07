@@ -78,7 +78,7 @@ Order:
 5. Knowledge base / apps only if they asked — not part of platform tune
 
 ## If two skills overlap
-Operate vs debug → troubleshooting when there is an error, console API when you are only fetching/changing config. Service API vs console → `/v1` is for *published* apps and external callers; `/console/api` is for you as admin. Catalog vs a domain skill → catalog picks the prefix; the domain skill has the payload. Compose knobs vs a crash → compose-and-config to change a value, troubleshooting when it is already broken. Import vs edit → `POST /apps/imports` always creates a **new** app; in-place canvas edits are `POST .../workflows/draft` plus `hash`. Platform tune vs tools → compose/intranet/model-providers; do not start with agents-and-tools.
+Operate vs debug → troubleshooting when there is an error, console API when you are only fetching/changing config. Service API vs console → `/v1` is for *published* apps and external callers; `/console/api` is for you as admin. Catalog vs a domain skill → catalog picks the prefix; the domain skill has the payload. Compose knobs vs a crash → compose-and-config to change a value, troubleshooting when it is already broken. Import vs edit → `POST /apps/imports` always creates a **new** app; in-place canvas edits are `POST .../workflows/draft` plus `hash`. **Shipping a new version is always in-place sync on the SAME `app_id` — never delete-and-reimport** (keys/site/logs/triggers die with the old id; red line in apps-and-workflows). Platform tune vs tools → compose/intranet/model-providers; do not start with agents-and-tools.
 
 ## Examples
 
