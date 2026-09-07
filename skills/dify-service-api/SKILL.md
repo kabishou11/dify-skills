@@ -19,6 +19,8 @@ Use this when calling a published Dify app or dataset from code. Prefix map: [Di
 
 Enable API: `POST /console/api/apps/{id}/api-enable`. Create a key: `POST /console/api/apps/{id}/api-keys`. One key is bound to **one app** — reusing it across apps → 401/404. Never store the key in a skill file.
 
+A key is tied to the **`app_id`**, not the DSL. Shipping a new version by **delete-and-reimport** (`POST /apps/imports`) mints a new id and the key "disappears" (401/404) with the run/test logs. Publish new versions by in-place draft sync on the same id — see [Dify apps and workflows](sand-workflow:dify-apps-and-workflows) *NEVER delete-and-reimport*. `ensure_app_key` helpers must reuse an existing key (GET `/apps/{id}/api-keys` first) instead of regenerating.
+
 There is often **no** `/v1/chat/completions`. Use `chat-messages` / `workflows/run`.
 
 ## `user` is a data scope (not a comment)

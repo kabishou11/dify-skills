@@ -5,6 +5,11 @@ Version numbers match **Dify**, not SemVer of this repo.
 
 A frozen GitHub Release (`v1.17.0`) is created only when a Dify line is frozen. Until then everything lives on `main` under **Unreleased**. A **pre-release** may attach importable zips; that is not a freeze.
 
+## 2026-09-07 — 发新版本禁止 delete-and-reimport（保住 api-key / test 记录）
+
+- **apps-and-workflows**: 新增红线「NEVER delete-and-reimport to ship a new version」+ Publish checklist 第 8 项。`POST /apps/imports` 每次生成全新 `app_id`，而 Service API key、WebApp site、会话/运行日志（test 记录）、trigger 行都绑在旧 id 上——重导入即整体失联，表现为「每次发新版本 apikey 消失、test 记录没了」。正确做法是**同一 id 原地 draft 同步 + publish**；`ensure_app_key` 类 helper 必须先 GET 复用已有 key，不能重建。
+- **service-api**: key 绑定的是 `app_id` 不是 DSL；交叉引用上述红线。
+
 ## 2026-09-06 — contract-tools 插件实战回灌（zhulei/contract-tools 0.1.4）
 
 - **plugin-development**: 守护端 schema 校验细则（label/human_description 必须双语、含冒号值加引号、图标必须在 _assets、find|zip 打包防目录条目、manifest 需 runner/minimum_dify_version）；`model-selector` 复用 Dify 已配置模型实现插件零密钥（多模态消息构造示例）；File.blob 相对 `/files/` URL 修补；同 id 版本切换需卸载重装；PyMuPDF 中文渲染损坏 → pypdfium2。

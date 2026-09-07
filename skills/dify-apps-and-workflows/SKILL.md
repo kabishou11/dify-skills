@@ -26,7 +26,7 @@ Generate JSON (valid YAML) → validate → import **or** sync draft → publish
 
 1. Login (Base64 password + cookie + CSRF). Tokens last ~1h (`unauthorized` → login again).
 2. `GET /apps/{id}/workflows/draft` and keep `hash`.
-3. **Import** `POST /apps/imports` `{"mode":"yaml-content","yaml_content":"..."}` creates a **new** app every time.
+3. **Import** `POST /apps/imports` `{"mode":"yaml-content","yaml_content":"..."}` creates a **new** app every time. Callers must still **sync in place** to ship a new version — see the warning below.
 4. **Sync in place** (keep URL / API key): `POST /apps/{id}/workflows/draft` (not PATCH). 1.17 payload is `graph` + `features` + `hash` + optional `conversation_variables`. Do **not** send `environment_variables` — pydantic `extra_forbidden`. Env var edits use `environment_variable_patch: {environment_variables:[...], deleted_environment_variable_ids:[...]}`. Then `POST /apps/{id}/workflows/publish` `{}`.
 5. Debug without WebApp:
    - workflow: `POST /apps/{id}/workflows/draft/run`
@@ -34,6 +34,21 @@ Generate JSON (valid YAML) → validate → import **or** sync draft → publish
    Parse SSE `node_finished` (`status`/`outputs`/`error`) and `workflow_finished`.
 
 `draft_workflow_not_sync` → GET a fresh hash. Stale hash → 400.
+
+### NEVER delete-and-reimport to ship a new version
+
+**Do not "publish a new version" by deleting the old app and `POST /apps/imports`-ing the DSL again** (and do not let a publish/bootstrap script do it). `imports` mints a **brand-new `app_id`** every time, but everything the caller depends on is bound to the **old id**:
+
+| Bound to old `app_id` | What you lose on re-import |
+|---|---|
+| `POST /apps/{id}/api-keys` Service API keys | backend `Authorization: Bearer …` → 401/404; the key "disappears" |
+| `POST /apps/{id}/site-enable` WebApp | share URL / `access_token` dead |
+| `/apps/{id}/chat-conversations`, `/workflow-app-logs`, `/workflow-runs`, annotations | all **test records / run history gone** (not migrated to the new id) |
+| trigger rows (`/apps/{id}/triggers`, schedule plans, webhook `webhook_id`) | public `/triggers/webhook/{id}` URL changes; callers break |
+
+**Correct "new version" flow = sync in place on the SAME id**: `GET .../workflows/draft` → edit graph → `POST .../workflows/draft` (+ `hash`) → `POST .../workflows/publish`. The `app_id` never changes, so keys, site, logs, and triggers survive. `ensure_app_key`-style helpers must **reuse an existing key** (GET `/apps/{id}/api-keys` first, only POST if none) rather than regenerate.
+
+Only use `imports` for a **genuinely new app** (different product/role), and then publish it as its own tool/endpoint. If you truly must move a graph to a new app, re-create the api-key, re-enable site/triggers, and re-point every caller — but the old test records are unrecoverable, so prefer in-place sync.
 
 ## DSL top-level
 
@@ -397,6 +412,7 @@ Private/internal URLs need `SSRF_PROXY_ALLOW_PRIVATE_IPS` (CIDR list) and matchi
 5. Publish → `api-enable` / `site-enable`. Start variables match caller `inputs`.
 6. Trigger graphs: no `start` node; webhook `GET .../triggers/webhook?node_id=` has a URL; schedule has `worker_beat` + poller flag; plugin node has `subscription_id`.
 7. `TRIGGER_URL` is the origin callers actually hit. `ENDPOINT_URL_TEMPLATE` is only for `/e/{hook_id}` plugin Endpoints.
+8. New version shipped by **in-place draft sync on the SAME `app_id`** — not delete-and-reimport. Re-confirm the api-key, site, triggers and run/test logs still resolve to that id. See *NEVER delete-and-reimport to ship a new version*.
 
 ## DSL proven facts (0.7.0, validated by import + run on 1.17 Community)
 
