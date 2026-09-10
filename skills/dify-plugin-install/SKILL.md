@@ -70,3 +70,12 @@ Prefer user-supplied URL: OpenAI-compatible, vLLM, Xinference, SQL, Redis, SSH, 
 - **Upgrading the same plugin-id**: daemon compiles the new package, but the workspace keeps the OLD installation active until you uninstall + install the new identifier. Symptom: "I bumped the version but behavior is unchanged". Verify active version via `plugin/list → meta.plugin_unique_identifier`.
 - Launch failures surface in `GET .../plugin/tasks` (status failed) **and** daemon logs; a failed launch leaves no runtime — `docker logs plugin_daemon` shows the pydantic/yaml error (see plugin-development addendum).
 - Restart window: calls during daemon restart fail `no available node, plugin runtime not found` — retry after `local runtime ready`; the api side may also log transient `ConnectError: Name or service not known` for `plugin_daemon`.
+
+## Plugin regression rollback (1.17, minimax 0.0.27 incident)
+
+When a marketplace upgrade breaks model invocations:
+1. Check `plugin/list → meta.plugin_unique_identifier` for the current version.
+2. Old version directory still in daemon cwd (`docker/volumes/plugin_daemon/cwd/<org>/<plugin>-<ver>@<hash>/`) if not garbage-collected — pack it: `cd <dir> && find . -type f -not -path './.venv/*' -not -name '*.pyc' | zip -q /tmp/rollback.difypkg -@`.
+3. Upload (`POST .../upload/pkg` field `pkg`) → uninstall current (`{"plugin_installation_id":..., "preserve_credentials":true}` — model credentials live in api DB, this preserves them) → install old.
+4. **Archive the rollback difypkg** in your delivery repo (`vendor-plugins/`) for next time.
+5. **Pin the version** in ops docs; test any future upgrade on a staging workspace first.

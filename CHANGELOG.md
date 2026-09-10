@@ -70,3 +70,9 @@ Working tree on `main`. **No frozen `v1.17.0` Release yet.** Preview zips may be
 ### Notes
 - Community edition only. RBAC / billing / some RAG publish endpoints 403 by design.
 - Do not treat this tree as a frozen 1.17 snapshot until `v1.17.0` is released.
+
+## 2026-09-10 — minimax 0.0.27 regression incident
+
+- **troubleshooting**: `Messages.create() got an unexpected keyword argument 'temperature'` — plugin 0.0.27 Anthropic channel rejects sampling params; only nodes WITH temperature/top_p fail (nodes without them work). Downgrade to 0.0.26.
+- **plugin-install**: Regression rollback procedure (pack from daemon cwd old dir, uninstall with preserve_credentials, install old, archive rollback pkg).
+- **Lesson**: marketplace plugin upgrades can silently regress model invocation. Archive known-good difypkg; test upgrades on staging first; pin versions in ops docs.
