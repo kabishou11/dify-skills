@@ -98,7 +98,7 @@ GET /apps/{id}/agent/logs?conversation_id=<uuid>&message_id=<uuid>
 
 Prefer serial tool calls over join when the vendor's parallel join is flaky. Classifier nodes need a `fail-branch`. HTTP **node** is not an agent tool; it still needs `authorization: {"type":"no-auth","config":null}`.
 
-On 1.17.0, Agent Studio tool calling is flaky. If the customer demo is a tool-using assistant, use a **workflow** (or classic `agent-chat`) until a patch. Do not put Human Input nodes inside a Loop.
+Through 1.17.1, Agent Studio tool calling is still flaky (open upstream). If the customer demo is a tool-using assistant, use a **workflow** (or classic `agent-chat`). Human Input inside Loop/Iteration was **fixed in 1.17.1** (forms complete, timeout edge fires the right branch, second pauses resumable) — still give the node a fail-branch.
 
 ## Failure patterns
 

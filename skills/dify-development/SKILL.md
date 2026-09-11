@@ -52,9 +52,9 @@ Use this first when the user wants anything Dify-related. Pick one skill and fol
 12. 1.17 `POST /apps/{id}/workflows/draft` is `graph`+`features`+`hash` (+ `conversation_variables`). Top-level `environment_variables` → 400 `extra_forbidden`. Env edits: `environment_variable_patch`.
 13. 1.17 Console **GET** also needs `X-CSRF-Token` (cookie alone → 401). Unauthenticated `/` → 307 `/signin` is normal. Agent Studio is `GET /agent`, not `/apps`.
 14. Ship **text-PDF** and **OCR** as separate apps. Prefer **one reusable OCR workflow published as a tool** over dropping MinerU on every canvas. An if-else “short text → OCR loop” still puts OCR on that canvas. Product backends (`/v1`) run **published**, not draft.
-15. On 1.17.0, treat workspace Skill **file upload**, FastMCP OAuth, QA-segment answer PATCH, and Agent Studio **tool calling** as unstable until a patch release. Prefer classic workflow + `/v1` for anything a customer will demo.
+15. Through 1.17.1: workspace Skill **zip/blob upload** (1.17.1 only fixed Windows-CRLF package imports), FastMCP OAuth, QA-segment answer PATCH, and Agent Studio **tool calling** are still open upstream bugs. Prefer classic workflow + `/v1` for anything a customer will demo. Fixed in 1.17.1: Human Input inside Loop/Iteration, >100-row pagination truncation on Service API, MCP provider DELETE 422.
 16. Schedule Trigger cannot share a graph with `start`. File ingest and daily cron are two apps. Cron must be published. There is no one-shot delay queue.
-17. Host iron (when host ops docs exist): **one** LLM on :8001 (Dense 27B TP=4, ctx 262144, `--disable-custom-all-reduce`; the old “TP=1 / ctx 16384” rule is obsolete). No second LLM. No MTP. Do not `compose down -v`. Do not `pull :latest` without a digest. Local wheels only; never `pip install torch` from PyPI. Do not publish frozen contract-review / kbqa product apps.
+17. Host iron (when host ops docs exist): **one** LLM on :8001 (Dense 27B TP=4, ctx 262144, `--disable-custom-all-reduce`; the old “TP=1 / ctx 16384” rule is obsolete). No second LLM; MTP is toggled only by the host's single LLM startup script. Do not `compose down -v`. Do not `pull :latest` without a digest. Local wheels only; never `pip install torch` from PyPI. Do not publish frozen contract-review / kbqa product apps.
 
 ## 新环境：Dify 平台基础配置
 

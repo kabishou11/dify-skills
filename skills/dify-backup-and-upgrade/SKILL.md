@@ -52,7 +52,7 @@ Start `dockerd` if needed, confirm storage-driver, `compose up -d`, `GET /consol
 
 Heavily customized compose (custom vector image, `NO_PROXY`, loop/time caps, upload limits) must **not** be replaced with the official file. Merge new keys into yours.
 
-1. Read release notes (1.17: `EDITION` → `DEPLOYMENT_EDITION`; keep `COMMUNITY`. Leaving a leftover `EDITION=` in `.env` is fine).
+1. Read release notes (1.17: `EDITION` → `DEPLOYMENT_EDITION`; keep `COMMUNITY`. Leaving a leftover `EDITION=` in `.env` is fine). 1.17.1: bundled Weaviate jumps 1.27.0→1.39.2 and needs a staged ladder **only if you run the bundled weaviate** (external / milvus stacks are unaffected); three auto-migrations land incl. **irreversible** `5578e028b2f3a` (legacy model types) — the step-2 dump is the only way back. `plugin-daemon` stays `0.6.10-local` across 1.17.x.
 2. Backup: `pg_dump -Fc` **both** `dify` and `dify_plugin`, plus `.env`, compose, nginx, `volumes/app/storage`, `plugin_packages/`. Write a rollback note **before** you migrate.
 3. Record current image **tags and digests** (`docker inspect --format '{{.RepoDigests}}'`). Pull the new tag (or `name@sha256:…` through a mirror). Never un-pinned `:latest`.
 4. Merge new env keys. Do **not** turn on `WORKFLOW_LOG_CLEANUP_ENABLED` or `ENABLE_CONVERSATION_CLEANUP_TASK` unless the operator asked — 1.17 ships them off; flipping them deletes run history.

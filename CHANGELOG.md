@@ -3,7 +3,17 @@
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 Version numbers match **Dify**, not SemVer of this repo.
 
-A frozen GitHub Release (`v1.17.0`) is created only when a Dify line is frozen. Until then everything lives on `main` under **Unreleased**. A **pre-release** may attach importable zips; that is not a freeze.
+A frozen GitHub Release (`v1.17.1`) is created only when a Dify line is frozen. Until then everything lives on `main` under **Unreleased**. A **pre-release** may attach importable zips; that is not a freeze.
+
+## 2026-09-11 — 跟进 Dify 1.17.1（补丁核销 + 行为变化）
+
+- **development**: 第 15 条改为「Through 1.17.1」——1.17.1 实修 Human Input 进 Loop/Iteration、Service API >100 行分页截断、MCP provider DELETE 422；Skill zip/blob 上传（仅修了 Windows-CRLF 包导入）、FastMCP OAuth、QA answer PATCH、Agent Studio 工具调用**仍开**。第 17 条 MTP 口径改为「由宿主唯一 LLM 启动脚本统一开关」。
+- **agents-and-tools**: Human Input 进 Loop 警示改为已修（仍要 fail-branch）；Agent Studio 工具调用警示保留。
+- **workspace-extras**: 新增 1.17.1 行为变化——**Agent run 保留期默认 3 天→2 小时**（`agent/logs` 空先怀疑保留期，长审计需求设 `DIFY_AGENT_RUN_RETENTION_SECONDS`）。
+- **service-api**: workflows/logs 段补 1.17.1 分页修复说明。
+- **knowledge-bases**: QA answer 清空警示保留，但口径精确到「1.17.1 只修了 attachment_ids 省略时的附件清空，answer 清空未列修复」。
+- **backup-and-upgrade**: 升级第 1 步补 1.17.1 要点——内置 Weaviate 1.27→1.39.2 分阶梯（仅 bundled-weaviate 受影响）、三个自动迁移含**不可逆** `5578e028b2f3a`（dump 是唯一退路）、plugin-daemon 1.17.x 不动（0.6.10-local）。
+- **VERSION**: 钉 `dify: 1.17.1`，preview 名同步。
 
 ## 2026-09-07 — 发新版本禁止 delete-and-reimport（保住 api-key / test 记录）
 

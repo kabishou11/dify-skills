@@ -11,7 +11,9 @@ Use this for Console surfaces that are not the core app canvas, plugins, or data
 
 These are **Dify workspace** Skills / Agents, not this repository's operating skills.
 
-**1.17.0 caution.** Workspace Skill **zip/blob upload**, FastMCP OAuth, and Agent Studio tool calling have open upstream bugs. Keep the HTTP map below for when they work; do not build a customer demo on them until a patch release. Classic `mode: workflow` + `/v1` is the stable path.
+**1.17.x caution.** Workspace Skill **zip/blob upload**, FastMCP OAuth, and Agent Studio tool calling still have open bugs in 1.17.1 (that patch only fixed Windows-CRLF skill-package imports and MCP provider DELETE 422). Do not build a customer demo on them; classic `mode: workflow` + `/v1` is the stable path.
+
+**1.17.1 behavior change.** Agent-run retention defaults to **2 hours** (was 3 days). If `/apps/{id}/agent/logs` comes back empty, suspect retention before data loss; raise `DIFY_AGENT_RUN_RETENTION_SECONDS` on api/worker if agent runs must stay auditable.
 
 Community: `/workspaces/current/rbac/*` and `/billing/*` 403 or empty. RAG pipeline **publish** is gated by `knowledge_pipeline.publish_enabled` (403 if off). Agent Studio still works as community APIs unless a handler is wrapped with a license gate.
 

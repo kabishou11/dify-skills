@@ -74,7 +74,7 @@ API key for the external KB is stored encrypted under `SECRET_KEY` — changing 
 
 Dataset metadata, document segments, tags: console `/datasets/{id}/...`. Service API dataset keys can do the same under `/v1`.
 
-**QA segments.** 1.17.0 has a bug where updating a QA pair via API can **wipe `answer`**. Do not batch-PATCH QA answers until a patch; edit in the UI or wait.
+**QA segments.** The 1.17.0 bug where API-updating a QA pair can **wipe `answer`** is not listed as fixed in 1.17.1 (that patch only fixed attachment-wipe when `attachment_ids` is omitted). Do not batch-PATCH QA answers; edit in the UI.
 
 Hit-test (`/hit-testing`) does **not** apply canvas metadata filters. To verify department isolation, run the knowledge-retrieval **node** (draft/run), not hit-test.
 

@@ -78,7 +78,7 @@ Production logs (app key; `mode=workflow`):
 GET /v1/workflows/logs?keyword=&status=failed&created_at__after=2026-08-01T00:00:00Z&created_at__before=2026-08-27T23:59:59Z&page=1&limit=20
 ```
 
-`status`: `succeeded` | `failed` | `stopped`. Optional `created_by_end_user_session_id`, `created_by_account`. No `detail` flag (that is console `/workflow-app-logs`). Node traces stay on console `/workflow-runs/{id}/node-executions`. Dataset hit-test: `POST /v1/datasets/{id}/hit-testing` (same body as console; also aliased as `/retrieve`).
+`status`: `succeeded` | `failed` | `stopped`. Optional `created_by_end_user_session_id`, `created_by_account`. No `detail` flag (that is console `/workflow-app-logs`). Node traces stay on console `/workflow-runs/{id}/node-executions`. Dataset hit-test: `POST /v1/datasets/{id}/hit-testing` (same body as console; also aliased as `/retrieve`). Pagination `has_more` stopped truncating >100-row requests as of **1.17.1** (on 1.17.0, asking for more than 100 rows silently under-reported).
 
 ## WebApp
 
