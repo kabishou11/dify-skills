@@ -3,7 +3,18 @@
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 Version numbers match **Dify**, not SemVer of this repo.
 
-A frozen GitHub Release (`v1.17.1`) is created only when a Dify line is frozen. Until then everything lives on `main` under **Unreleased**. A **pre-release** may attach importable zips; that is not a freeze.
+A frozen GitHub Release (`vX.Y.Z`) is cut only when a Dify line is frozen, and the tag equals that Dify version. `v1.17.1` is the frozen release for Dify Community 1.17.1. `main` keeps tracking the latest Dify. A **pre-release** may attach importable zips; that is not a freeze.
+
+## [Unreleased]
+
+## [1.17.1] - 2026-10-17
+
+First frozen release, pinned to Dify Community 1.17.1. It includes all entries listed below (2026-09-06 through 2026-09-11, and the 1.17.0 working notes).
+
+- README is now English-first, with Chinese in `README.zh-CN.md`.
+- Badges fixed: Dify 1.17.1, and a live release badge.
+- `VERSION` is frozen (`status: frozen`, `release: v1.17.1`).
+- Four import zips are attached: `dify-troubleshooting`, `dify-compose-and-config`, `dify-plugin-install`, `dify-console-api`.
 
 ## 2026-09-11 — 跟进 Dify 1.17.1（补丁核销 + 行为变化）
 
@@ -32,9 +43,9 @@ A frozen GitHub Release (`v1.17.1`) is created only when a Dify line is frozen. 
 - **model-providers**: openai_api_compatible 能力标志陷阱（`document_support=support` 会发送 file 类型消息，多数网关 400 Invalid value: file）；`PUT models/credentials` 必须回传完整 api_key（GET 脱敏）。
 - **troubleshooting**: 新增四条症状矩阵（渲染乱码/重启窗口/画布清单为空/版本不生效）。
 
-## [Unreleased] — Dify 1.17.0
+## 1.17.0 working notes (pre-release dify-1.17.0-skills-preview)
 
-Working tree on `main`. **No frozen `v1.17.0` Release yet.** Preview zips may be published as `dify-1.17.0-skills-preview`.
+Working notes from `main` before the freeze. No frozen `v1.17.0` Release was cut. Preview zips were published as `dify-1.17.0-skills-preview`.
 
 ### Added
 - Dify 1.17 workspace Import packages: `scripts/package-dify-workspace.py` zips `skills/<name>/` with `SKILL.md` at the archive root into `dist/*.zip` (default: troubleshooting, compose-and-config, plugin-install, console-api).
@@ -79,10 +90,13 @@ Working tree on `main`. **No frozen `v1.17.0` Release yet.** Preview zips may be
 
 ### Notes
 - Community edition only. RBAC / billing / some RAG publish endpoints 403 by design.
-- Do not treat this tree as a frozen 1.17 snapshot until `v1.17.0` is released.
+- These notes were not a frozen 1.17.0 snapshot. No frozen `v1.17.0` Release was cut.
 
 ## 2026-09-10 — minimax 0.0.27 regression incident
 
 - **troubleshooting**: `Messages.create() got an unexpected keyword argument 'temperature'` — plugin 0.0.27 Anthropic channel rejects sampling params; only nodes WITH temperature/top_p fail (nodes without them work). Downgrade to 0.0.26.
 - **plugin-install**: Regression rollback procedure (pack from daemon cwd old dir, uninstall with preserve_credentials, install old, archive rollback pkg).
 - **Lesson**: marketplace plugin upgrades can silently regress model invocation. Archive known-good difypkg; test upgrades on staging first; pin versions in ops docs.
+
+[Unreleased]: https://github.com/kabishou11/dify-skills/compare/v1.17.1...HEAD
+[1.17.1]: https://github.com/kabishou11/dify-skills/releases/tag/v1.17.1

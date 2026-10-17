@@ -29,7 +29,7 @@ Skills on `main` target the Dify version in [`VERSION`](VERSION). If you are wri
 
 ## Install
 
-End users copy `skills/dify-*` with `scripts/install.sh`, or import a packaged zip on the Dify 1.17 Skills page. Do not add machine-specific paths to `SKILL.md`. Details: [README](README.md#安装).
+End users copy `skills/dify-*` with `scripts/install.sh`, or import a packaged zip on the Dify 1.17 Skills page. Do not add machine-specific paths to `SKILL.md`. Details: [README · Install](README.md#install).
 
 ## Skill format
 
@@ -62,4 +62,4 @@ python3 scripts/package-dify-workspace.py
 
 ## Releases
 
-Do not tag a **frozen** GitHub Release (`v1.17.0`) from a PR. That tag is cut only when a Dify line is frozen; it equals that Dify version. A **pre-release** such as `dify-1.17.0-skills-preview` may attach importable zips while `main` is still unreleased — that is not a freeze and not a 1.0. See [README · 版本策略](README.md#版本策略).
+Frozen tags `vX.Y.Z` equal the Dify version and are cut by the maintainer when that Dify line is frozen (current: `v1.17.1`), not from a PR. A **pre-release** such as `dify-<ver>-skills-preview` may attach importable zips. That is not a freeze and not a 1.0. See [README · Versioning](README.md#versioning).
